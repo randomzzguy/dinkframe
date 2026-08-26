@@ -29,10 +29,27 @@ export const metadata: Metadata = {
   description:
     "Premium, tournament-specific poster design for pickleball athletes.",
   applicationName: "DINKFRAME",
+  manifest: "/site.webmanifest",
   icons: {
-    icon: [{ url: "/icon.png", type: "image/png" }],
-    shortcut: "/icon.png",
-    apple: "/icon.png",
+    icon: [
+      {
+        url: "/favicon-32x32.png",
+        type: "image/png",
+        sizes: "32x32",
+      },
+      {
+        url: "/favicon-16x16.png",
+        type: "image/png",
+        sizes: "16x16",
+      },
+    ],
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        type: "image/png",
+        sizes: "180x180",
+      },
+    ],
   },
   alternates: { canonical: "/" },
   openGraph: {
