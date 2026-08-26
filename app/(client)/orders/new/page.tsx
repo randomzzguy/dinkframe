@@ -1,0 +1,91 @@
+import { OrderWizard } from "@/components/client/order-wizard";
+import { requireUser } from "@/lib/auth/guards";
+
+export default async function NewOrderPage() {
+  const { claims, supabase } = await requireUser();
+  const [packageResult, themeResult, paymentResult, profileResult] =
+    await Promise.all([
+      supabase
+        .from("packages")
+        .select("slug, name, poster_count, price_myr, free_amendments")
+        .eq("active", true)
+        .order("sort_order"),
+      supabase
+        .from("themes")
+        .select("slug, name, description")
+        .eq("active", true)
+        .order("sort_order"),
+      supabase
+        .from("payment_settings")
+        .select(
+          "bank_name, account_name, account_number, duitnow_id, instructions, qr_image_path",
+        )
+        .eq("id", true)
+        .maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("full_name, whatsapp, instagram_handle")
+        .eq("id", typeof claims.sub === "string" ? claims.sub : "")
+        .maybeSingle(),
+    ]);
+
+  const packages = (packageResult.data ?? []).map((item) => ({
+    slug: item.slug,
+    name: item.name,
+    posterCount: item.poster_count,
+    priceMyr: item.price_myr,
+    freeAmendments: item.free_amendments,
+  }));
+  const themes = (themeResult.data ?? []).map((item) => ({
+    slug: item.slug,
+    name: item.name,
+    description: item.description,
+  }));
+  const qrUrl = paymentResult.data?.qr_image_path
+    ? ((
+        await supabase.storage
+          .from("payment-proofs")
+          .createSignedUrl(paymentResult.data.qr_image_path, 1800)
+      ).data?.signedUrl ?? null)
+    : null;
+  const paymentInstructions = {
+    bankName: paymentResult.data?.bank_name ?? null,
+    accountName: paymentResult.data?.account_name ?? null,
+    accountNumber: paymentResult.data?.account_number ?? null,
+    duitnowId: paymentResult.data?.duitnow_id ?? null,
+    instructions: paymentResult.data?.instructions ?? null,
+    qrUrl,
+  };
+
+  return (
+    <>
+      <div className="mb-8">
+        <p className="eyebrow">Create poster order</p>
+        <h1 className="mt-2 text-4xl font-black tracking-tight">
+          Tell us about your next tournament.
+        </h1>
+        <p className="mt-3 max-w-2xl text-neutral-600">
+          Your draft is saved locally as you go. Files will move to private
+          storage when Supabase is connected.
+        </p>
+      </div>
+      {packages.length > 0 && themes.length > 0 ? (
+        <OrderWizard
+          packages={packages}
+          themes={themes}
+          paymentInstructions={paymentInstructions}
+          initialProfile={{
+            fullName: profileResult.data?.full_name ?? null,
+            whatsapp: profileResult.data?.whatsapp ?? null,
+            instagramHandle: profileResult.data?.instagram_handle ?? null,
+          }}
+        />
+      ) : (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+          Order configuration is not available yet. Ask DINKFRAME to finish the
+          package and theme setup.
+        </div>
+      )}
+    </>
+  );
+}

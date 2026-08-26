@@ -1,0 +1,2 @@
+-- Migrations seed packages and themes idempotently. Keep this file for local-only fixtures.
+-- Add non-production test accounts or sample orders here when integration tests are introduced.
