@@ -17,9 +17,11 @@ port = 54323
 
 [auth]
 enabled = true
-site_url = "https://dinkframe.vercel.app"
+site_url = "https://app.dinkframe.my"
 additional_redirect_urls = [
   "http://localhost:3000/**",
+  "https://app.dinkframe.my/auth/callback",
+  "https://dinkframe.my/auth/callback",
   "https://dinkframe.vercel.app/auth/callback",
   "https://*-randomzzguys-projects.vercel.app/**",
 ]
