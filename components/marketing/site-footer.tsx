@@ -1,20 +1,26 @@
+import Image from "next/image";
 import Link from "next/link";
-
-import { Logo } from "@/components/brand/logo";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-black/10 bg-neutral-950 py-12 text-white">
-      <div className="page-shell grid gap-8 sm:grid-cols-2 sm:items-end">
+    <footer className="relative overflow-hidden border-t border-white/8 bg-black py-14 text-white sm:py-20">
+      <div className="bg-primary/8 absolute -right-24 -bottom-48 size-96 rounded-full blur-3xl" />
+      <div className="page-shell relative grid gap-10 sm:grid-cols-2 sm:items-end">
         <div>
-          <Logo className="text-2xl" />
-          <p className="mt-3 max-w-sm text-sm text-neutral-400">
+          <Image
+            src="/upscaledlogo.png"
+            width={1254}
+            height={1254}
+            alt="DINKFRAME — your game, our frame"
+            className="-my-14 -ml-14 h-48 w-48 object-contain sm:-my-20 sm:-ml-20 sm:h-64 sm:w-64"
+          />
+          <p className="max-w-sm text-sm leading-6 text-neutral-500">
             Premium custom visuals built around the pickleball player.
           </p>
         </div>
         <nav
           aria-label="Footer navigation"
-          className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-neutral-300 sm:justify-end"
+          className="flex flex-wrap gap-x-7 gap-y-3 text-sm text-neutral-400 sm:justify-end [&_a]:transition [&_a]:duration-300 hover:[&_a]:text-white"
         >
           <Link href="/contact">Contact</Link>
           <Link href="/privacy">Privacy</Link>

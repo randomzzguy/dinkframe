@@ -22,17 +22,20 @@ export default async function AdminPage() {
   return (
     <>
       <p className="eyebrow">Studio overview</p>
-      <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
+      <h1 className="font-heading mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
         Production at a glance.
       </h1>
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map(([label], index) => (
           <article
             key={label}
-            className="rounded-2xl border border-black/10 bg-white p-6"
+            className="interactive-card relative overflow-hidden rounded-3xl border border-black/8 bg-white/90 p-6 shadow-sm"
           >
+            <div className="from-primary absolute inset-x-0 top-0 h-1 bg-gradient-to-r to-transparent" />
             <p className="text-sm text-neutral-500">{label}</p>
-            <p className="mt-4 text-5xl font-black">{counts[index]}</p>
+            <p className="font-heading mt-4 text-5xl font-bold">
+              {counts[index]}
+            </p>
           </article>
         ))}
       </div>

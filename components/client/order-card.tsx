@@ -11,7 +11,7 @@ type Order = Database["public"]["Tables"]["orders"]["Row"];
 export function OrderCard({ order }: { order: Order }) {
   return (
     <Link href={`/orders/${order.id}`} className="group block">
-      <Card className="transition group-hover:-translate-y-0.5 group-hover:shadow-lg">
+      <Card className="interactive-card border-0 bg-white/90 group-hover:-translate-y-1 group-hover:shadow-xl">
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -22,7 +22,9 @@ export function OrderCard({ order }: { order: Order }) {
                 {order.player_name} — {order.tournament_name}
               </CardTitle>
             </div>
-            <ArrowUpRight className="size-5 text-neutral-400" />
+            <span className="group-hover:bg-primary grid size-9 place-items-center rounded-xl bg-neutral-100 transition duration-300">
+              <ArrowUpRight className="size-4 text-neutral-500 transition group-hover:text-black" />
+            </span>
           </div>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-4">

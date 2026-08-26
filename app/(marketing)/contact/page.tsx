@@ -10,14 +10,14 @@ export default function ContactPage() {
       <p>
         <Link
           href="/login"
-          className="font-bold text-black underline underline-offset-4"
+          className="text-primary font-bold underline underline-offset-4"
         >
           Start an order
         </Link>{" "}
         ·{" "}
         <Link
           href="https://instagram.com/dinkframe"
-          className="font-bold text-black underline underline-offset-4"
+          className="text-primary font-bold underline underline-offset-4"
         >
           Instagram
         </Link>

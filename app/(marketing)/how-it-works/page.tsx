@@ -12,18 +12,22 @@ const steps = [
 
 export default function HowItWorksPage() {
   return (
-    <section className="page-shell py-20 sm:py-28">
+    <section className="page-shell py-20 sm:py-32">
       <p className="eyebrow">How it works</p>
-      <h1 className="mt-4 max-w-4xl text-6xl font-black tracking-[-0.06em] sm:text-8xl">
+      <h1 className="reveal-up font-heading mt-5 max-w-5xl text-6xl leading-[.88] font-bold tracking-[-0.065em] sm:text-8xl">
         UPLOAD. CHOOSE. PAY. DONE.
       </h1>
-      <ol className="mt-16 grid gap-px overflow-hidden rounded-2xl border border-black/10 bg-black/10 lg:grid-cols-5">
+      <ol className="mt-16 grid gap-4 lg:grid-cols-5">
         {steps.map((step, index) => (
-          <li key={step} className="bg-white p-7">
-            <span className="text-sm font-black text-neutral-400">
+          <li
+            key={step}
+            className="interactive-card glass-panel group rounded-3xl p-7"
+          >
+            <span className="text-primary font-mono text-sm font-bold">
               0{index + 1}
             </span>
-            <h2 className="mt-16 text-xl font-bold">{step}</h2>
+            <div className="group-hover:bg-primary/50 mt-16 h-px w-10 bg-white/15 transition-all duration-500 group-hover:w-full" />
+            <h2 className="font-heading mt-5 text-xl font-bold">{step}</h2>
           </li>
         ))}
       </ol>

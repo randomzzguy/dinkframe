@@ -26,7 +26,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
         <div>
           <p className="eyebrow">Your orders</p>
-          <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
+          <h1 className="font-heading mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
             Welcome, {firstName}.
           </h1>
         </div>
@@ -34,7 +34,7 @@ export default async function DashboardPage() {
           href="/orders/new"
           className={cn(
             buttonVariants({ size: "lg" }),
-            "h-11 rounded-full px-5 font-bold",
+            "rounded-full px-5 font-bold",
           )}
         >
           <Plus /> Create new order
@@ -44,7 +44,7 @@ export default async function DashboardPage() {
         {orders?.length ? (
           orders.map((order) => <OrderCard key={order.id} order={order} />)
         ) : (
-          <div className="col-span-full rounded-2xl border border-dashed border-black/20 bg-white p-10 text-center">
+          <div className="col-span-full rounded-3xl border border-dashed border-black/15 bg-white/80 p-12 text-center shadow-sm backdrop-blur">
             <h2 className="text-xl font-bold">No active orders yet.</h2>
             <p className="mt-2 text-neutral-600">
               Your next tournament poster starts here.

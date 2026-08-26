@@ -61,7 +61,7 @@ export default async function NewOrderPage() {
     <>
       <div className="mb-8">
         <p className="eyebrow">Create poster order</p>
-        <h1 className="mt-2 text-4xl font-black tracking-tight">
+        <h1 className="font-heading mt-3 text-4xl font-bold tracking-tight">
           Tell us about your next tournament.
         </h1>
         <p className="mt-3 max-w-2xl text-neutral-600">

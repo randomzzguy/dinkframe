@@ -8,10 +8,13 @@ export function PackageGrid() {
       {PACKAGE_CATALOG.map((item, index) => (
         <article
           key={item.slug}
-          className={`relative rounded-2xl border p-6 ${index === 1 ? "border-black bg-neutral-950 text-white" : "border-black/10 bg-white"}`}
+          className={`interactive-card relative overflow-hidden rounded-3xl border p-6 sm:p-7 ${index === 1 ? "border-primary/50 bg-primary text-black shadow-[0_20px_60px_rgba(216,255,54,.12)] lg:-translate-y-3" : "border-white/10 bg-white/[.045] text-white"}`}
         >
+          <div
+            className={`absolute inset-x-0 top-0 h-px ${index === 1 ? "bg-black/20" : "via-primary/50 bg-gradient-to-r from-transparent to-transparent"}`}
+          />
           {index === 1 && (
-            <span className="bg-primary absolute top-4 right-4 rounded-full px-2 py-1 text-[10px] font-bold tracking-wider text-black uppercase">
+            <span className="absolute top-4 right-4 rounded-full bg-black px-2.5 py-1 text-[10px] font-bold tracking-wider text-white uppercase">
               Popular
             </span>
           )}
@@ -19,12 +22,14 @@ export function PackageGrid() {
             {item.posterCount} poster{item.posterCount > 1 ? "s" : ""}
           </p>
           <h3 className="mt-4 text-xl font-bold">{item.name}</h3>
-          <p className="mt-6 text-4xl font-black tracking-tight">
+          <p className="font-heading mt-6 text-4xl font-bold tracking-tight">
             RM{item.priceMyr}
           </p>
-          <p className="mt-5 flex items-center gap-2 text-sm opacity-75">
-            <Check className="text-primary size-4" /> {item.freeAmendments} free
-            amendments
+          <p className="mt-7 flex items-center gap-2 border-t border-current/10 pt-5 text-sm opacity-75">
+            <Check
+              className={`size-4 ${index === 1 ? "text-black" : "text-primary"}`}
+            />{" "}
+            {item.freeAmendments} free amendments
           </p>
         </article>
       ))}

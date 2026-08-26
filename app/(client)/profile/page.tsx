@@ -15,11 +15,13 @@ export default async function ProfilePage() {
   return (
     <div className="mx-auto max-w-2xl">
       <p className="eyebrow">Account details</p>
-      <h1 className="mt-2 text-4xl font-black tracking-tight">Your profile</h1>
+      <h1 className="font-heading mt-3 text-4xl font-bold tracking-tight">
+        Your profile
+      </h1>
       <p className="mt-3 text-neutral-600">
         These details prefill new orders so repeat bookings take less time.
       </p>
-      <section className="mt-8 rounded-2xl border border-black/10 bg-white p-6 sm:p-8">
+      <section className="mt-8 rounded-3xl border border-black/8 bg-white/90 p-6 shadow-[0_18px_60px_rgba(18,24,10,.06)] sm:p-8">
         <ProfileForm
           email={email}
           fullName={profile?.full_name ?? null}
