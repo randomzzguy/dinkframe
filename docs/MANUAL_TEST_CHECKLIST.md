@@ -17,6 +17,7 @@
 
 ## Client isolation
 
+- Run `npm run test:rls:live` with a transient `SUPABASE_SERVICE_ROLE_KEY` before production deployment.
 - Create two client accounts and at least one order for each.
 - Confirm client A cannot select client B’s order through Supabase API calls.
 - Confirm client A cannot load client B’s `/orders/{id}` page.

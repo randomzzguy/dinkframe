@@ -126,6 +126,14 @@ npm run check
 
 Or run parts independently with `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`.
 
+After linking a disposable or intended Supabase project, run the hosted RLS smoke test with a service-role key available only in the current shell:
+
+```bash
+npm run test:rls:live
+```
+
+The test creates two temporary confirmed users, verifies draft and private-file isolation, verifies the database admin role, and removes all temporary users, rows, and objects in a `finally` cleanup. Never commit the service-role key or place it in a public environment variable.
+
 The unit suite covers:
 
 - package pricing
