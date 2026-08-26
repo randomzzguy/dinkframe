@@ -11,7 +11,7 @@ export default function PackagesPage() {
       <h1 className="reveal-up font-heading mt-5 max-w-5xl text-6xl leading-[.88] font-bold tracking-[-0.065em] sm:text-8xl">
         ONE GAME. FOUR WAYS TO FRAME IT.
       </h1>
-      <p className="mt-7 max-w-xl text-lg leading-8 text-neutral-400">
+      <p className="mt-7 max-w-xl text-lg leading-8 text-neutral-600">
         Every package includes premium design and a clear amendment allowance.
         Extra amendments are RM10 each.
       </p>

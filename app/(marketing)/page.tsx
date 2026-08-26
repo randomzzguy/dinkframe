@@ -48,7 +48,7 @@ export default function HomePage() {
             <br />
             <span className="text-gradient">OUR FRAME.</span>
           </h1>
-          <p className="reveal-up reveal-delay-1 mt-8 max-w-xl text-lg leading-8 text-neutral-400">
+          <p className="reveal-up reveal-delay-1 mt-8 max-w-xl text-lg leading-8 text-neutral-600">
             Premium custom posters for pickleball athletes—built for your
             tournament, your story, and your next big post.
           </p>
@@ -66,7 +66,7 @@ export default function HomePage() {
               href="/work"
               className={cn(
                 buttonVariants({ variant: "outline", size: "lg" }),
-                "rounded-full border-white/15 bg-white/5 px-6 text-white hover:bg-white/10 hover:text-white",
+                "rounded-full border-black/12 bg-white/70 px-6 text-black shadow-sm hover:bg-white hover:text-black",
               )}
             >
               View our work
@@ -75,7 +75,7 @@ export default function HomePage() {
         </div>
         <div className="relative mx-auto w-full max-w-lg py-8 lg:py-0">
           <div className="border-primary/25 bg-primary/10 absolute inset-8 rotate-6 rounded-[2.5rem] border blur-sm" />
-          <div className="float-soft glass-panel relative aspect-[4/5] overflow-hidden rounded-[2.25rem] p-7 text-white shadow-[0_35px_100px_rgba(0,0,0,.5)] sm:p-9">
+          <div className="float-soft relative aspect-[4/5] overflow-hidden rounded-[2.25rem] border border-black/15 bg-[#10120f] p-7 text-white shadow-[0_35px_100px_rgba(41,50,20,.22)] sm:p-9">
             <div className="court-grid absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent)] opacity-40" />
             <div className="bg-primary/25 absolute -top-20 -right-20 size-64 rounded-full blur-3xl" />
             <div className="bg-primary absolute inset-x-8 top-[42%] h-px rotate-[-12deg] shadow-[0_0_20px_#d8ff36]" />
@@ -108,14 +108,14 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <div className="glass-panel absolute -right-3 bottom-16 rounded-2xl px-4 py-3 text-xs shadow-2xl sm:-right-8">
+          <div className="absolute -right-3 bottom-16 rounded-2xl border border-black/10 bg-white px-4 py-3 text-xs text-black shadow-2xl sm:-right-8">
             <span className="bg-primary mr-2 inline-block size-2 rounded-full shadow-[0_0_12px_#d8ff36]" />{" "}
             Social-ready output
           </div>
         </div>
       </section>
 
-      <div className="overflow-hidden border-y border-white/8 bg-white/[.025] py-4">
+      <div className="overflow-hidden border-y border-black/8 bg-black/[.025] py-4">
         <div className="marquee-track font-heading flex gap-9 text-sm font-bold tracking-[0.22em] text-neutral-500 uppercase">
           {Array.from({ length: 2 }).map((_, group) => (
             <div key={group} className="flex gap-9">
@@ -139,7 +139,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <section className="border-b border-white/8 py-24 sm:py-32">
+      <section className="border-b border-black/8 py-24 sm:py-32">
         <div className="page-shell">
           <p className="eyebrow">Why DINKFRAME</p>
           <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -152,7 +152,7 @@ export default function HomePage() {
                   <Icon className="size-5" />
                 </span>
                 <h2 className="mt-12 text-lg font-bold">{title}</h2>
-                <p className="mt-2 text-sm leading-6 text-neutral-400">
+                <p className="mt-2 text-sm leading-6 text-neutral-600">
                   {copy}
                 </p>
               </article>
@@ -171,7 +171,7 @@ export default function HomePage() {
           </div>
           <Link
             href="/packages"
-            className="hover:text-primary hidden text-sm font-semibold text-neutral-400 transition sm:block"
+            className="hidden text-sm font-semibold text-neutral-600 transition hover:text-black sm:block"
           >
             Compare packages
           </Link>

@@ -26,7 +26,7 @@ export default function HowItWorksPage() {
             <span className="text-primary font-mono text-sm font-bold">
               0{index + 1}
             </span>
-            <div className="group-hover:bg-primary/50 mt-16 h-px w-10 bg-white/15 transition-all duration-500 group-hover:w-full" />
+            <div className="group-hover:bg-primary mt-16 h-px w-10 bg-black/15 transition-all duration-500 group-hover:w-full" />
             <h2 className="font-heading mt-5 text-xl font-bold">{step}</h2>
           </li>
         ))}

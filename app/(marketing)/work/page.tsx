@@ -27,7 +27,7 @@ export default function WorkPage() {
       <h1 className="reveal-up font-heading mt-5 text-6xl leading-[.88] font-bold tracking-[-0.065em] sm:text-8xl">
         WORK THAT PLAYS LOUD.
       </h1>
-      <p className="mt-7 max-w-xl text-lg leading-8 text-neutral-400">
+      <p className="mt-7 max-w-xl text-lg leading-8 text-neutral-600">
         Bold, player-first visual directions built to make tournament moments
         feel as big online as they did on court.
       </p>
@@ -35,7 +35,7 @@ export default function WorkPage() {
         {work.map(([title, category, style], index) => (
           <article
             key={title}
-            className={`interactive-card group relative aspect-[4/5] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br p-7 ${style}`}
+            className={`interactive-card group relative aspect-[4/5] overflow-hidden rounded-3xl border border-black/10 bg-gradient-to-br p-7 shadow-[0_18px_55px_rgba(41,50,20,.1)] ${style}`}
           >
             <div className="court-grid absolute inset-0 opacity-20 transition duration-700 group-hover:scale-110" />
             <div className="absolute top-1/4 -right-16 size-48 rounded-full bg-white/15 blur-3xl transition duration-700 group-hover:scale-125" />

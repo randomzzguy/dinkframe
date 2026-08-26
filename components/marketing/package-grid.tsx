@@ -8,7 +8,7 @@ export function PackageGrid() {
       {PACKAGE_CATALOG.map((item, index) => (
         <article
           key={item.slug}
-          className={`interactive-card relative overflow-hidden rounded-3xl border p-6 sm:p-7 ${index === 1 ? "border-primary/50 bg-primary text-black shadow-[0_20px_60px_rgba(216,255,54,.12)] lg:-translate-y-3" : "border-white/10 bg-white/[.045] text-white"}`}
+          className={`interactive-card relative overflow-hidden rounded-3xl border p-6 sm:p-7 ${index === 1 ? "border-primary/70 bg-primary text-black shadow-[0_20px_60px_rgba(132,160,25,.16)] lg:-translate-y-3" : "border-black/10 bg-white/85 text-black shadow-[0_14px_45px_rgba(41,50,20,.05)]"}`}
         >
           <div
             className={`absolute inset-x-0 top-0 h-px ${index === 1 ? "bg-black/20" : "via-primary/50 bg-gradient-to-r from-transparent to-transparent"}`}
