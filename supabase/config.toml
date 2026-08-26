@@ -17,8 +17,12 @@ port = 54323
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+site_url = "https://dinkframe.vercel.app"
+additional_redirect_urls = [
+  "http://localhost:3000/**",
+  "https://dinkframe.vercel.app/auth/callback",
+  "https://*-randomzzguys-projects.vercel.app/**",
+]
 enable_signup = true
 
 [auth.email]
