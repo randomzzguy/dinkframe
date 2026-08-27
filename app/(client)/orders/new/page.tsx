@@ -47,13 +47,15 @@ export default async function NewOrderPage() {
           .from("payment-proofs")
           .createSignedUrl(paymentResult.data.qr_image_path, 1800)
       ).data?.signedUrl ?? null)
-    : null;
+    : "/qr.png";
   const paymentInstructions = {
-    bankName: paymentResult.data?.bank_name ?? null,
-    accountName: paymentResult.data?.account_name ?? null,
-    accountNumber: paymentResult.data?.account_number ?? null,
+    bankName: paymentResult.data?.bank_name ?? "GX BANK BERHAD",
+    accountName: paymentResult.data?.account_name ?? "ZENCODE SOFTWARE LABS",
+    accountNumber: paymentResult.data?.account_number ?? "8188-061518-2",
     duitnowId: paymentResult.data?.duitnow_id ?? null,
-    instructions: paymentResult.data?.instructions ?? null,
+    instructions:
+      paymentResult.data?.instructions ??
+      "Pay by bank transfer or scan the Touch 'n Go QR code, then upload your receipt below.",
     qrUrl,
   };
 

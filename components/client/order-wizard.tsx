@@ -5,8 +5,11 @@ import {
   ArrowRight,
   Check,
   Cloud,
+  Copy,
   FileCheck2,
+  Landmark,
   Plus,
+  QrCode,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -759,59 +762,113 @@ export function OrderWizard({
 
           {step === 7 && (
             <div className="space-y-6">
-              <div className="grid gap-5 rounded-xl bg-neutral-100 p-5 sm:grid-cols-2">
-                <div>
-                  <p className="text-sm text-neutral-500">Selected package</p>
-                  <p className="mt-1 text-2xl font-black">
-                    {selectedPackage?.name} · RM{selectedPackage?.priceMyr}
+              <div className="overflow-hidden rounded-3xl border border-black/10 bg-white shadow-[0_18px_60px_rgba(32,42,12,.08)]">
+                <div className="flex flex-wrap items-center justify-between gap-4 bg-neutral-950 px-6 py-5 text-white">
+                  <div>
+                    <p className="text-primary text-xs font-bold tracking-[0.16em] uppercase">
+                      Amount to pay
+                    </p>
+                    <p className="font-heading mt-1 text-3xl font-bold">
+                      RM{selectedPackage?.priceMyr}
+                    </p>
+                  </div>
+                  <p className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-neutral-300">
+                    {selectedPackage?.name}
                   </p>
                 </div>
-                <div className="text-sm leading-6 text-neutral-600">
-                  <p className="font-bold text-black">Payment instructions</p>
-                  {paymentInstructions.bankName && (
-                    <p>
-                      {paymentInstructions.bankName} ·{" "}
-                      {paymentInstructions.accountName}
-                      <br />
-                      {paymentInstructions.accountNumber}
-                    </p>
-                  )}
-                  {paymentInstructions.duitnowId && (
-                    <p>DuitNow: {paymentInstructions.duitnowId}</p>
-                  )}
-                  {paymentInstructions.instructions && (
-                    <p>{paymentInstructions.instructions}</p>
-                  )}
-                  {!paymentInstructions.bankName &&
-                    !paymentInstructions.duitnowId && (
-                      <p>
-                        Ask DINKFRAME for the current transfer details before
-                        uploading proof.
+
+                <div className="grid lg:grid-cols-[1.05fr_.95fr]">
+                  <div className="p-6 sm:p-8">
+                    <div className="flex items-center gap-3">
+                      <span className="bg-primary/25 grid size-11 place-items-center rounded-2xl">
+                        <Landmark className="size-5" />
+                      </span>
+                      <div>
+                        <p className="font-heading text-xl font-bold">
+                          Bank transfer
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Transfer the exact package amount
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 divide-y divide-black/8 rounded-2xl border border-black/8 bg-[#f8f9f3] px-4">
+                      <PaymentDetail
+                        label="Business name"
+                        value={paymentInstructions.accountName}
+                      />
+                      <PaymentDetail
+                        label="Account number"
+                        value={paymentInstructions.accountNumber}
+                        copyable
+                      />
+                      <PaymentDetail
+                        label="Bank name"
+                        value={paymentInstructions.bankName}
+                      />
+                      {paymentInstructions.duitnowId && (
+                        <PaymentDetail
+                          label="DuitNow ID"
+                          value={paymentInstructions.duitnowId}
+                          copyable
+                        />
+                      )}
+                    </div>
+
+                    {paymentInstructions.instructions && (
+                      <p className="mt-5 text-sm leading-6 text-neutral-600">
+                        {paymentInstructions.instructions}
                       </p>
                     )}
+                  </div>
+
+                  {paymentInstructions.qrUrl && (
+                    <div className="border-t border-black/8 bg-[#f3f6eb] p-6 sm:p-8 lg:border-t-0 lg:border-l">
+                      <div className="flex items-center gap-3">
+                        <span className="bg-primary/25 grid size-11 place-items-center rounded-2xl">
+                          <QrCode className="size-5" />
+                        </span>
+                        <div>
+                          <p className="font-heading text-xl font-bold">
+                            Scan to pay
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            Touch &apos;n Go or any banking app
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href={paymentInstructions.qrUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-6 block"
+                      >
+                        {/* Supports the public TnG QR and optional signed admin QR URLs. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={paymentInstructions.qrUrl}
+                          alt="Touch 'n Go payment QR code"
+                          className="mx-auto h-auto w-full max-w-72 rounded-2xl border border-black/10 bg-white object-contain p-2 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                        />
+                        <span className="mt-3 block text-center text-xs font-semibold underline underline-offset-4">
+                          Open QR at full size
+                        </span>
+                      </a>
+                    </div>
+                  )}
                 </div>
-                {paymentInstructions.qrUrl && (
-                  <a
-                    href={paymentInstructions.qrUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="sm:col-span-2"
-                  >
-                    {/* The QR is a short-lived private Storage URL. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={paymentInstructions.qrUrl}
-                      alt="DINKFRAME payment QR code"
-                      className="size-48 rounded-xl border border-black/10 bg-white object-contain p-2"
-                    />
-                    <span className="mt-2 block text-xs font-semibold underline underline-offset-4">
-                      Open payment QR
-                    </span>
-                  </a>
-                )}
+              </div>
+              <div>
+                <p className="font-heading text-xl font-bold">
+                  Upload your payment receipt
+                </p>
+                <p className="mt-1 text-sm text-neutral-500">
+                  Once payment is complete, add the receipt so we can verify it.
+                </p>
               </div>
               <UploadArea
-                title="Payment proof"
+                title="Payment receipt"
                 note="Upload one JPEG, PNG, WebP, or PDF up to 10 MB. DINKFRAME confirms it manually."
                 accept="image/jpeg,image/png,image/webp,application/pdf"
                 onFiles={(files) => void handleFiles("payment_proof", files)}
@@ -897,6 +954,54 @@ export function OrderWizard({
           )}
         </div>
       </section>
+    </div>
+  );
+}
+
+function PaymentDetail({
+  label,
+  value,
+  copyable = false,
+}: {
+  label: string;
+  value: string | null;
+  copyable?: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  if (!value) return null;
+
+  async function copyValue() {
+    await navigator.clipboard.writeText(value ?? "");
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 py-3.5">
+      <div className="min-w-0">
+        <p className="text-[10px] font-bold tracking-[0.14em] text-neutral-500 uppercase">
+          {label}
+        </p>
+        <p className="mt-1 text-sm font-bold break-words text-neutral-950">
+          {value}
+        </p>
+      </div>
+      {copyable && (
+        <button
+          type="button"
+          onClick={() => void copyValue()}
+          className="hover:border-primary/60 hover:bg-primary/15 inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-xs font-semibold transition"
+          aria-label={`Copy ${label.toLowerCase()}`}
+        >
+          {copied ? (
+            <Check className="size-3.5" />
+          ) : (
+            <Copy className="size-3.5" />
+          )}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      )}
     </div>
   );
 }

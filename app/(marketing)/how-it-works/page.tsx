@@ -1,14 +1,21 @@
+import {
+  ClipboardList,
+  CreditCard,
+  Download,
+  MessageSquareMore,
+  WandSparkles,
+} from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "How it works" };
 
 const steps = [
-  "Submit your details",
-  "Confirm payment",
-  "We create your poster",
-  "Review & amendments",
-  "Receive your final poster",
-];
+  { title: "Submit your details", icon: ClipboardList },
+  { title: "Confirm payment", icon: CreditCard },
+  { title: "We create your poster", icon: WandSparkles },
+  { title: "Review & amendments", icon: MessageSquareMore },
+  { title: "Receive your final poster", icon: Download },
+] as const;
 
 export default function HowItWorksPage() {
   return (
@@ -18,16 +25,21 @@ export default function HowItWorksPage() {
         UPLOAD. CHOOSE. PAY. DONE.
       </h1>
       <ol className="mt-16 grid gap-4 lg:grid-cols-5">
-        {steps.map((step, index) => (
+        {steps.map(({ title, icon: Icon }, index) => (
           <li
-            key={step}
-            className="interactive-card glass-panel group rounded-3xl p-7"
+            key={title}
+            className="interactive-card glass-panel group flex min-h-72 flex-col rounded-3xl p-7"
           >
             <span className="text-primary font-mono text-sm font-bold">
               0{index + 1}
             </span>
-            <div className="group-hover:bg-primary mt-16 h-px w-10 bg-black/15 transition-all duration-500 group-hover:w-full" />
-            <h2 className="font-heading mt-5 text-xl font-bold">{step}</h2>
+            <div className="flex flex-1 items-center justify-center py-8">
+              <span className="group-hover:bg-primary grid size-20 place-items-center rounded-3xl border border-black/8 bg-[#f2f5e9] transition duration-500 group-hover:-translate-y-1 group-hover:rotate-3 group-hover:shadow-[0_12px_35px_rgba(168,205,30,.24)]">
+                <Icon className="size-9 stroke-[1.5]" aria-hidden="true" />
+              </span>
+            </div>
+            <div className="group-hover:bg-primary h-px w-10 bg-black/15 transition-all duration-500 group-hover:w-full" />
+            <h2 className="font-heading mt-5 text-xl font-bold">{title}</h2>
           </li>
         ))}
       </ol>
