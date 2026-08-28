@@ -11,6 +11,7 @@ import Link from "next/link";
 
 import { PackageGrid } from "@/components/marketing/package-grid";
 import { buttonVariants } from "@/components/ui/button";
+import { getAppLoginUrl } from "@/lib/auth/urls";
 import { cn } from "@/lib/utils";
 
 const benefits = [
@@ -37,6 +38,8 @@ const benefits = [
 ] as const;
 
 export default function HomePage() {
+  const loginUrl = getAppLoginUrl();
+
   return (
     <>
       <section className="page-shell relative grid min-h-[calc(100vh-5rem)] items-center gap-12 py-16 lg:grid-cols-[1.08fr_.92fr] lg:py-20">
@@ -54,7 +57,7 @@ export default function HomePage() {
           </p>
           <div className="reveal-up reveal-delay-2 mt-9 flex flex-wrap gap-3">
             <Link
-              href="/login"
+              href={loginUrl}
               className={cn(
                 buttonVariants({ size: "lg" }),
                 "rounded-full px-6 font-bold",
@@ -186,7 +189,7 @@ export default function HomePage() {
             READY TO FRAME YOUR NEXT TOURNAMENT?
           </h2>
           <Link
-            href="/login"
+            href={loginUrl}
             className={cn(
               buttonVariants({ size: "lg" }),
               "relative shrink-0 rounded-full bg-black px-6 text-white shadow-2xl hover:bg-neutral-900",

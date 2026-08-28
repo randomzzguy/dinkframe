@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Logo } from "@/components/brand/logo";
 import { buttonVariants } from "@/components/ui/button";
+import { getAppLoginUrl } from "@/lib/auth/urls";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -13,6 +14,8 @@ const navigation = [
 ] as const;
 
 export function SiteHeader() {
+  const loginUrl = getAppLoginUrl();
+
   return (
     <header className="sticky top-0 z-40 border-b border-black/8 bg-[#f9faf4]/82 text-neutral-950 shadow-[0_8px_30px_rgba(30,40,10,.04)] backdrop-blur-2xl">
       <div className="page-shell flex h-20 items-center justify-between gap-5">
@@ -43,7 +46,7 @@ export function SiteHeader() {
             <AtSign />
           </Link>
           <Link
-            href="/login"
+            href={loginUrl}
             className={cn(
               buttonVariants({ size: "lg" }),
               "hidden rounded-full px-5 font-bold sm:inline-flex",
@@ -67,7 +70,7 @@ export function SiteHeader() {
                 </Link>
               ))}
               <Link
-                href="/login"
+                href={loginUrl}
                 className="bg-primary mt-2 flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold text-black"
               >
                 Order your poster <ArrowUpRight className="size-4" />

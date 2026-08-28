@@ -7,7 +7,16 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{ error?: string | string[] }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const errorValue = (await searchParams).error;
+  const hasCallbackError = Array.isArray(errorValue)
+    ? errorValue.includes("callback")
+    : errorValue === "callback";
+
   return (
     <div className="reveal-up w-full max-w-md rounded-3xl border border-white/10 bg-white p-7 text-black shadow-[0_30px_100px_rgba(0,0,0,.45)] sm:p-10">
       <p className="eyebrow">Secure order access</p>
@@ -17,6 +26,15 @@ export default function LoginPage() {
       <p className="mt-3 text-sm leading-6 text-neutral-600">
         Enter your email and we’ll send a one-time sign-in link.
       </p>
+      {hasCallbackError ? (
+        <div
+          role="alert"
+          className="mt-6 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950"
+        >
+          That sign-in link could not be completed. Request a fresh link below
+          and open it in the same browser.
+        </div>
+      ) : null}
       <LoginForm />
     </div>
   );

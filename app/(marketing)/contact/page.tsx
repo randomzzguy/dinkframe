@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { SimplePage } from "@/components/marketing/simple-page";
+import { getAppLoginUrl } from "@/lib/auth/urls";
+
 export default function ContactPage() {
+  const loginUrl = getAppLoginUrl();
+
   return (
     <SimplePage eyebrow="Contact" title="LET'S FRAME YOUR NEXT TOURNAMENT.">
       <p>
@@ -9,7 +13,7 @@ export default function ContactPage() {
       </p>
       <p>
         <Link
-          href="/login"
+          href={loginUrl}
           className="text-primary font-bold underline underline-offset-4"
         >
           Start an order

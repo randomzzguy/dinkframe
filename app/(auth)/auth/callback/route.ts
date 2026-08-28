@@ -5,13 +5,17 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const flowId = requestUrl.searchParams.get("sb_flow_id");
   const next = requestUrl.searchParams.get("next");
   const safeNext =
     next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(
+      code,
+      flowId ? { flowId } : undefined,
+    );
 
     if (!error) {
       return NextResponse.redirect(new URL(safeNext, requestUrl.origin));
