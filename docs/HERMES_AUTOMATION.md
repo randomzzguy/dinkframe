@@ -58,11 +58,13 @@ npm run automation:run
 
 Hermes 0.19 or newer can use the installed `dinkframe-production` skill. Its
 quiet cron wrapper is installed at
-`~/.hermes/scripts/dinkframe-production.sh`. For an interactive run, give
-Hermes this repository as its working directory and use:
+`~/.hermes/scripts/dinkframe-production.py`. The Windows-native wrapper starts
+or reconnects the dedicated companion browser before polling production. For
+an interactive run, give Hermes this repository as its working directory and
+use:
 
 ```text
-Run scripts/run-companion-once.sh and report only if it prepared, sent, or failed a DINKFRAME job.
+Run python hermes/dinkframe-production.py and report only if it prepared, sent, or failed a DINKFRAME job.
 ```
 
 The wrapper produces no output when the queue is empty, which makes it suitable
@@ -70,7 +72,7 @@ for Hermes no-agent cron. After choosing a configured delivery channel, create a
 schedule similar to:
 
 ```powershell
-hermes cron create "every 1m" --no-agent --script dinkframe-production.sh --workdir "C:\Users\hhcre\Desktop\DINKFRAME\webapp1.0" --deliver telegram --name "dinkframe-production"
+hermes cron create "every 1m" --no-agent --script dinkframe-production.py --workdir "C:\Users\hhcre\Desktop\DINKFRAME\webapp1.0" --deliver telegram --name "dinkframe-production"
 ```
 
 Replace `telegram` with the owner's configured Hermes destination. Use

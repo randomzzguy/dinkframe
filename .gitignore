@@ -47,5 +47,6 @@ supabase/.temp
 
 # reversible local automation smoke-test receipts
 /.dinkframe/
+__pycache__/
 
 .vercel
