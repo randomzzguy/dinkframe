@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { getMagicLinkErrorMessage } from "@/lib/auth/magic-link-error";
 import { getPublicEnv } from "@/lib/config/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -39,9 +40,12 @@ export async function sendMagicLink(
   });
 
   if (error) {
+    console.error("magic_link_send_failed", {
+      code: error.code,
+      status: error.status,
+    });
     return {
-      message:
-        "We couldn't send the sign-in link. Please wait a moment and try again.",
+      message: getMagicLinkErrorMessage(error),
       status: "error",
     };
   }
