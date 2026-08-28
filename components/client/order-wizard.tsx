@@ -50,6 +50,7 @@ const steps = [
 const storageKey = "dinkframe.order-draft.v2";
 
 type UploadableAssetType = Exclude<AssetType, "final_poster">;
+type StepIndicatorStatus = "neutral" | "complete" | "incomplete";
 type DraftEvent = { id: string; eventName: string; partnerName: string };
 type DraftSponsor = { id: string; companyName: string };
 
@@ -139,6 +140,9 @@ export function OrderWizard({
   initialProfile: InitialProfile;
 }) {
   const [step, setStep] = useState(0);
+  const [stepIndicatorStatuses, setStepIndicatorStatuses] = useState<
+    StepIndicatorStatus[]
+  >(() => steps.map(() => "neutral"));
   const [draft, setDraft] = useState<Draft>(() =>
     createBlankDraft(packages, initialProfile),
   );
@@ -358,9 +362,24 @@ export function OrderWizard({
     }
   };
 
-  const nextStep = () => {
+  const goToStep = (nextStep: number) => {
+    if (nextStep === step) return;
+
+    setStepIndicatorStatuses((current) =>
+      current.map((status, index) =>
+        index === step
+          ? stepErrors[step] === null
+            ? "complete"
+            : "incomplete"
+          : status,
+      ),
+    );
     setMessage(undefined);
-    setStep((value) => Math.min(steps.length - 1, value + 1));
+    setStep(Math.max(0, Math.min(steps.length - 1, nextStep)));
+  };
+
+  const nextStep = () => {
+    goToStep(step + 1);
   };
 
   const submit = () => {
@@ -438,32 +457,37 @@ export function OrderWizard({
         <Progress value={((step + 1) / steps.length) * 100} className="mt-4" />
         <ol className="mt-5 space-y-1">
           {steps.map((label, index) => {
-            const isComplete = stepErrors[index] === null;
+            const indicatorStatus = stepIndicatorStatuses[index];
+            const isNeutral = indicatorStatus === "neutral";
+            const isComplete = indicatorStatus === "complete";
             const isCurrent = index === step;
 
             return (
               <li key={label}>
                 <button
                   type="button"
-                  onClick={() => {
-                    setMessage(undefined);
-                    setStep(index);
-                  }}
+                  onClick={() => goToStep(index)}
                   aria-current={isCurrent ? "step" : undefined}
-                  aria-label={`${label}: ${isComplete ? "complete" : "needs attention"}`}
+                  aria-label={`${label}: ${isNeutral ? "not checked yet" : isComplete ? "complete" : "needs attention"}`}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${isCurrent ? "bg-neutral-950 font-bold text-white" : "text-neutral-500 hover:bg-neutral-100"}`}
                 >
                   <span
                     className={cn(
                       "grid size-6 place-items-center rounded-full text-xs transition",
-                      isComplete
-                        ? "bg-primary text-black"
-                        : isCurrent
-                          ? "bg-[#f0643b] text-white"
-                          : "border border-[#f0643b]/30 bg-[#f0643b]/10 text-[#c64020]",
+                      isNeutral
+                        ? isCurrent
+                          ? "bg-neutral-600 text-white"
+                          : "bg-neutral-100 text-neutral-500"
+                        : isComplete
+                          ? "bg-primary text-black"
+                          : isCurrent
+                            ? "bg-[#f0643b] text-white"
+                            : "border border-[#f0643b]/30 bg-[#f0643b]/10 text-[#c64020]",
                     )}
                   >
-                    {isComplete ? (
+                    {isNeutral ? (
+                      index + 1
+                    ) : isComplete ? (
                       <Check className="size-3.5" aria-hidden="true" />
                     ) : (
                       <CircleAlert className="size-3.5" aria-hidden="true" />
@@ -476,6 +500,12 @@ export function OrderWizard({
           })}
         </ol>
         <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 border-t border-black/8 pt-4 text-[11px] font-semibold text-neutral-500">
+          <span className="flex items-center gap-1.5">
+            <span className="grid size-4 place-items-center rounded-full bg-neutral-100 text-[9px] text-neutral-500">
+              1
+            </span>
+            Not checked yet
+          </span>
           <span className="flex items-center gap-1.5">
             <span className="bg-primary grid size-4 place-items-center rounded-full text-black">
               <Check className="size-2.5" aria-hidden="true" />
@@ -1013,7 +1043,7 @@ export function OrderWizard({
           <Button
             type="button"
             variant="outline"
-            onClick={() => setStep((value) => Math.max(0, value - 1))}
+            onClick={() => goToStep(step - 1)}
             disabled={step === 0 || isSubmitting}
           >
             <ArrowLeft /> Back
