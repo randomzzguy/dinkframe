@@ -16,15 +16,17 @@ export async function requireUser() {
   return { claims: data.claims, supabase };
 }
 
+export function isAdminEmail(email: unknown) {
+  return (
+    typeof email === "string" &&
+    email.toLowerCase() === getServerEnv().ADMIN_EMAIL.toLowerCase()
+  );
+}
+
 export async function requireAdmin() {
   const session = await requireUser();
-  const adminEmail = getServerEnv().ADMIN_EMAIL.toLowerCase();
-  const email =
-    typeof session.claims.email === "string"
-      ? session.claims.email.toLowerCase()
-      : "";
 
-  if (email !== adminEmail) {
+  if (!isAdminEmail(session.claims.email)) {
     redirect("/dashboard");
   }
 

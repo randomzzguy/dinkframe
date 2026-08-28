@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isAdminEmail } from "@/lib/auth/guards";
 import { needsOnboarding } from "@/lib/auth/onboarding";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,14 +23,18 @@ export async function GET(request: Request) {
       let destination = safeNext;
 
       if (data.user) {
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", data.user.id)
-          .maybeSingle();
+        if (isAdminEmail(data.user.email)) {
+          destination = "/admin";
+        } else {
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", data.user.id)
+            .maybeSingle();
 
-        if (!profileError && needsOnboarding(profile?.full_name)) {
-          destination = "/onboarding";
+          if (!profileError && needsOnboarding(profile?.full_name)) {
+            destination = "/onboarding";
+          }
         }
       }
 

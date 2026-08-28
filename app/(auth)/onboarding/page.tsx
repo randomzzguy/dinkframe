@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { OnboardingForm } from "@/components/auth/onboarding-form";
+import { isAdminEmail, requireUser } from "@/lib/auth/guards";
 import { needsOnboarding } from "@/lib/auth/onboarding";
-import { requireUser } from "@/lib/auth/guards";
 
 export const metadata: Metadata = {
   title: "Complete your profile",
@@ -12,6 +12,11 @@ export const metadata: Metadata = {
 
 export default async function OnboardingPage() {
   const { claims, supabase } = await requireUser();
+
+  if (isAdminEmail(claims.email)) {
+    redirect("/admin");
+  }
+
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("email, full_name, whatsapp, instagram_handle")
