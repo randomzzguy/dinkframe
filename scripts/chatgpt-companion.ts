@@ -295,10 +295,7 @@ function safeFilename(filename: string) {
 }
 
 function normalize(value: string) {
-  return value
-    .replaceAll("\u00a0", " ")
-    .replaceAll(/\s+/g, " ")
-    .trim();
+  return value.replaceAll("\u00a0", " ").replaceAll(/\s+/g, " ").trim();
 }
 
 function normalizeLocalAppUrl(value: string) {

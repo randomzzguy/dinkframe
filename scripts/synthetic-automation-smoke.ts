@@ -7,9 +7,11 @@ import { z } from "zod";
 
 import {
   buildPromptStudioMessage,
+  IMAGE_GENERATION_TEMPLATE_VERSION,
   PROMPT_STUDIO_TEMPLATE_VERSION,
   selectManifestForStage,
   toJson,
+  validateManifestForStage,
   type GenerationAssetManifestItem,
   type GenerationBriefSnapshot,
 } from "../lib/automation/generation";
@@ -36,6 +38,7 @@ type SmokeState = {
   orderId: string;
   orderNumber: string;
   jobId: string;
+  imageJobId?: string;
   storagePaths: string[];
 };
 
@@ -50,10 +53,11 @@ async function main() {
   const command = process.argv[2];
   if (command === "create") await createSmokeOrder();
   else if (command === "status") await showSmokeStatus();
+  else if (command === "queue-image") await queueSmokeImageJob();
   else if (command === "retry") await retrySmokeJob();
   else if (command === "cleanup") await cleanupSmokeOrder();
   else {
-    throw new Error("Use create, status, retry, or cleanup.");
+    throw new Error("Use create, status, queue-image, retry, or cleanup.");
   }
 }
 
@@ -317,8 +321,105 @@ async function cleanupSmokeOrder() {
   );
 }
 
+async function queueSmokeImageJob() {
+  const state = await readState();
+  const promptPath = process.argv[3];
+  if (!promptPath) {
+    throw new Error(
+      "Pass the path to the manually copied Prompt Studio response.",
+    );
+  }
+  const generatedPrompt = (
+    await readFile(path.resolve(promptPath), "utf8")
+  ).trim();
+  if (generatedPrompt.length < 100) {
+    throw new Error(
+      "The copied image-generation prompt is unexpectedly short.",
+    );
+  }
+
+  const [orderResult, promptJobResult, assetsResult, existingResult] =
+    await Promise.all([
+      supabase
+        .from("orders")
+        .select("admin_note")
+        .eq("id", state.orderId)
+        .maybeSingle(),
+      supabase
+        .from("generation_jobs")
+        .select("brief_snapshot, submission_mode, status")
+        .eq("id", state.jobId)
+        .eq("order_id", state.orderId)
+        .eq("stage", "prompt_generation")
+        .maybeSingle(),
+      supabase
+        .from("order_assets")
+        .select(
+          "id, asset_type, bucket_id, storage_path, original_filename, mime_type, file_size",
+        )
+        .eq("order_id", state.orderId),
+      supabase
+        .from("generation_jobs")
+        .select("id")
+        .eq("order_id", state.orderId)
+        .eq("stage", "image_generation")
+        .limit(1),
+    ]);
+  const lookupError =
+    orderResult.error ??
+    promptJobResult.error ??
+    assetsResult.error ??
+    existingResult.error;
+  if (lookupError) throw lookupError;
+  if (orderResult.data?.admin_note !== marker) {
+    throw new Error("Image queueing refused: this is not the synthetic order.");
+  }
+  if (promptJobResult.data?.status !== "submitted") {
+    throw new Error("Mark the Prompt Studio smoke job submitted first.");
+  }
+  if (existingResult.data?.length) {
+    throw new Error("The synthetic order already has an image-generation job.");
+  }
+
+  const manifest: GenerationAssetManifestItem[] = (assetsResult.data ?? []).map(
+    (asset) => ({
+      id: asset.id,
+      assetType: asset.asset_type,
+      bucketId: asset.bucket_id,
+      storagePath: asset.storage_path,
+      originalFilename: asset.original_filename,
+      mimeType: asset.mime_type,
+      fileSize: asset.file_size,
+    }),
+  );
+  const manifestError = validateManifestForStage("image_generation", manifest);
+  if (manifestError) throw new Error(manifestError);
+
+  const { data: job, error } = await supabase
+    .from("generation_jobs")
+    .insert({
+      order_id: state.orderId,
+      stage: "image_generation",
+      submission_mode: promptJobResult.data.submission_mode,
+      input_text: generatedPrompt,
+      prompt_template_version: IMAGE_GENERATION_TEMPLATE_VERSION,
+      brief_snapshot: promptJobResult.data.brief_snapshot,
+      asset_manifest: toJson(
+        selectManifestForStage("image_generation", manifest),
+      ),
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+
+  state.imageJobId = job.id;
+  await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  console.log(`Queued review-mode synthetic image job ${job.id}.`);
+}
+
 async function retrySmokeJob() {
   const state = await readState();
+  const retryJobId = state.imageJobId ?? state.jobId;
   const { data, error } = await supabase
     .from("generation_jobs")
     .update({
@@ -329,14 +430,14 @@ async function retrySmokeJob() {
       completed_at: null,
       last_error: null,
     })
-    .eq("id", state.jobId)
+    .eq("id", retryJobId)
     .eq("order_id", state.orderId)
     .eq("status", "failed")
     .select("id")
     .maybeSingle();
   if (error) throw error;
   if (!data) throw new Error("The synthetic job is not failed and retryable.");
-  console.log(`Requeued synthetic job ${state.jobId}.`);
+  console.log(`Requeued synthetic job ${retryJobId}.`);
 }
 
 async function cleanupPartial({
