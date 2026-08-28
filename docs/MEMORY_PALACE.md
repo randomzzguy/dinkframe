@@ -28,6 +28,23 @@ Where it lives:
 
 Rule to remember: the wristband proves identity, but every room still checks access. Server layouts guard navigation; RLS guards the underlying data.
 
+## The courtside messenger — account email
+
+What happens: Supabase creates one-time account links and security messages,
+then Resend delivers them through the DINKFRAME sending domain.
+
+Where it lives:
+
+- Template generator: `scripts/generate-email-templates.mjs`
+- Generated email-safe HTML: `supabase/templates`
+- Local template wiring: `supabase/config.toml`
+- Hosted installation guide: `supabase/templates/README.md`
+
+Rule to remember: Supabase owns the one-time token and its destination. Keep
+template variables such as `{{ .ConfirmationURL }}` unchanged, use absolute
+public image URLs, disable Resend link tracking, and never place SMTP secrets in
+Git.
+
 ## The player tunnel — client ordering
 
 What happens: authenticated players see their orders and walk through the nine-step order brief.

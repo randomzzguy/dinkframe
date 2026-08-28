@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:rls:live": "node --env-file=.env.local scripts/live-rls-smoke.mjs",
+    "emails:build": "node scripts/generate-email-templates.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build"

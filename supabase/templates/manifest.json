@@ -1,0 +1,80 @@
+[
+  {
+    "key": "magic_link",
+    "dashboardName": "Magic Link",
+    "subject": "Your secure DINKFRAME sign-in link",
+    "file": "magic-link.html"
+  },
+  {
+    "key": "confirmation",
+    "dashboardName": "Confirm signup",
+    "subject": "Confirm your email for DINKFRAME",
+    "file": "confirm-signup.html"
+  },
+  {
+    "key": "invite",
+    "dashboardName": "Invite user",
+    "subject": "You’re invited to DINKFRAME",
+    "file": "invite-user.html"
+  },
+  {
+    "key": "recovery",
+    "dashboardName": "Reset password",
+    "subject": "Reset your DINKFRAME password",
+    "file": "reset-password.html"
+  },
+  {
+    "key": "email_change",
+    "dashboardName": "Change email address",
+    "subject": "Confirm your new DINKFRAME email",
+    "file": "change-email.html"
+  },
+  {
+    "key": "reauthentication",
+    "dashboardName": "Reauthentication",
+    "subject": "{{ .Token }} is your DINKFRAME verification code",
+    "file": "reauthentication.html"
+  },
+  {
+    "key": "password_changed_notification",
+    "dashboardName": "Password changed",
+    "subject": "Your DINKFRAME password was changed",
+    "file": "password-changed.html"
+  },
+  {
+    "key": "email_changed_notification",
+    "dashboardName": "Email address changed",
+    "subject": "Your DINKFRAME email address was changed",
+    "file": "email-changed.html"
+  },
+  {
+    "key": "phone_changed_notification",
+    "dashboardName": "Phone number changed",
+    "subject": "Your DINKFRAME phone number was changed",
+    "file": "phone-changed.html"
+  },
+  {
+    "key": "identity_linked_notification",
+    "dashboardName": "Sign-in method linked",
+    "subject": "A sign-in method was added to DINKFRAME",
+    "file": "sign-in-method-linked.html"
+  },
+  {
+    "key": "identity_unlinked_notification",
+    "dashboardName": "Sign-in method removed",
+    "subject": "A sign-in method was removed from DINKFRAME",
+    "file": "sign-in-method-removed.html"
+  },
+  {
+    "key": "mfa_factor_enrolled_notification",
+    "dashboardName": "Verification method added",
+    "subject": "A verification method was added to DINKFRAME",
+    "file": "verification-method-added.html"
+  },
+  {
+    "key": "mfa_factor_unenrolled_notification",
+    "dashboardName": "Verification method removed",
+    "subject": "A verification method was removed from DINKFRAME",
+    "file": "verification-method-removed.html"
+  }
+]

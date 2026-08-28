@@ -36,6 +36,26 @@ max_frequency = "1m"
 otp_length = 8
 otp_expiry = 3600
 
+[auth.email.template.invite]
+subject = "You’re invited to DINKFRAME"
+content_path = "./supabase/templates/invite-user.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm your email for DINKFRAME"
+content_path = "./supabase/templates/confirm-signup.html"
+
+[auth.email.template.recovery]
+subject = "Reset your DINKFRAME password"
+content_path = "./supabase/templates/reset-password.html"
+
+[auth.email.template.magic_link]
+subject = "Your secure DINKFRAME sign-in link"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your new DINKFRAME email"
+content_path = "./supabase/templates/change-email.html"
+
 [auth.mfa]
 max_enrolled_factors = 10
 

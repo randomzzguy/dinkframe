@@ -94,6 +94,14 @@ In Supabase Auth URL configuration, set the production site URL and allow both c
 
 Email/password entry is intentionally absent. Clients sign in through email OTP/magic link.
 
+### Branded authentication emails
+
+DINKFRAME's Supabase authentication and security-notification templates live in
+`supabase/templates`. Run `npm run emails:build` to regenerate them, then follow
+`supabase/templates/README.md` to install them in the hosted Supabase dashboard.
+The live magic-link flow depends on the `{{ .ConfirmationURL }}` placeholder, so
+it must not be edited or wrapped by Resend link tracking.
+
 ### Admin setup
 
 1. Sign in once with the address configured as `ADMIN_EMAIL`; this creates the profile.
