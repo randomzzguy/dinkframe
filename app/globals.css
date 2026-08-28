@@ -270,6 +270,146 @@
       ),
       linear-gradient(180deg, #f7f8f3, #eff1ea);
   }
+
+  .order-success-stage {
+    width: 15rem;
+    height: 15rem;
+  }
+
+  .order-success-rays,
+  .order-success-dots {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .order-success-ray {
+    --ray-angle: 0deg;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 7rem;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #d8ff36, rgba(216, 255, 54, 0));
+    box-shadow: 0 0 14px rgba(216, 255, 54, 0.85);
+    opacity: 0;
+    transform-origin: left center;
+    animation: order-success-ray 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .order-success-ray:nth-child(1) {
+    --ray-angle: 0deg;
+  }
+  .order-success-ray:nth-child(2) {
+    --ray-angle: 45deg;
+    animation-delay: 45ms;
+  }
+  .order-success-ray:nth-child(3) {
+    --ray-angle: 90deg;
+    animation-delay: 90ms;
+  }
+  .order-success-ray:nth-child(4) {
+    --ray-angle: 135deg;
+    animation-delay: 135ms;
+  }
+  .order-success-ray:nth-child(5) {
+    --ray-angle: 180deg;
+    animation-delay: 180ms;
+  }
+  .order-success-ray:nth-child(6) {
+    --ray-angle: 225deg;
+    animation-delay: 225ms;
+  }
+  .order-success-ray:nth-child(7) {
+    --ray-angle: 270deg;
+    animation-delay: 270ms;
+  }
+  .order-success-ray:nth-child(8) {
+    --ray-angle: 315deg;
+    animation-delay: 315ms;
+  }
+
+  .order-success-dot {
+    --dot-x: 0rem;
+    --dot-y: -6rem;
+    position: absolute;
+    top: calc(50% - 0.25rem);
+    left: calc(50% - 0.25rem);
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: #d8ff36;
+    box-shadow: 0 0 16px rgba(216, 255, 54, 0.9);
+    opacity: 0;
+    animation: order-success-dot 1.05s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .order-success-dot:nth-child(2) {
+    --dot-x: 4rem;
+    --dot-y: -5rem;
+    animation-delay: 70ms;
+  }
+  .order-success-dot:nth-child(3) {
+    --dot-x: 6rem;
+    --dot-y: -1rem;
+    animation-delay: 140ms;
+  }
+  .order-success-dot:nth-child(4) {
+    --dot-x: 5rem;
+    --dot-y: 4rem;
+    animation-delay: 210ms;
+  }
+  .order-success-dot:nth-child(5) {
+    --dot-x: 1rem;
+    --dot-y: 6rem;
+    animation-delay: 280ms;
+  }
+  .order-success-dot:nth-child(6) {
+    --dot-x: -4rem;
+    --dot-y: 5rem;
+    animation-delay: 350ms;
+  }
+  .order-success-dot:nth-child(7) {
+    --dot-x: -6rem;
+    --dot-y: 1rem;
+    animation-delay: 420ms;
+  }
+  .order-success-dot:nth-child(8) {
+    --dot-x: -5rem;
+    --dot-y: -4rem;
+    animation-delay: 490ms;
+  }
+  .order-success-dot:nth-child(9) {
+    --dot-x: -1rem;
+    --dot-y: -6rem;
+    animation-delay: 560ms;
+  }
+  .order-success-dot:nth-child(10) {
+    --dot-x: 3rem;
+    --dot-y: 5.5rem;
+    animation-delay: 630ms;
+  }
+
+  .order-success-mark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    width: 6rem;
+    height: 6rem;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: #d8ff36;
+    color: #11130e;
+    box-shadow:
+      0 0 0 12px rgba(216, 255, 54, 0.08),
+      0 0 70px rgba(216, 255, 54, 0.35);
+    transform: translate(-50%, -50%) scale(0);
+    animation: order-success-mark 700ms cubic-bezier(0.16, 1, 0.3, 1) 220ms
+      forwards;
+  }
 }
 
 @keyframes reveal-up {
@@ -316,6 +456,50 @@
 @keyframes text-shine {
   to {
     background-position: 200% center;
+  }
+}
+
+@keyframes order-success-ray {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--ray-angle)) scaleX(0);
+  }
+  28% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 0.9;
+    transform: rotate(var(--ray-angle)) scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--ray-angle)) translateX(1.5rem) scaleX(1);
+  }
+}
+
+@keyframes order-success-dot {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  24% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dot-x), var(--dot-y)) scale(0.1);
+  }
+}
+
+@keyframes order-success-mark {
+  0% {
+    transform: translate(-50%, -50%) scale(0) rotate(-18deg);
+  }
+  72% {
+    transform: translate(-50%, -50%) scale(1.12) rotate(3deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1) rotate(0);
   }
 }
 

@@ -4,8 +4,10 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  CircleAlert,
   Cloud,
   Copy,
+  Crosshair,
   FileCheck2,
   Landmark,
   Plus,
@@ -13,14 +15,14 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 import {
   prepareOrderDraft,
   submitOrder,
 } from "@/app/(client)/orders/new/actions";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -31,6 +33,8 @@ import type {
   OrderDraftInput,
   UploadedAssetInput,
 } from "@/lib/validation/order";
+import { getOrderWizardStepError } from "@/lib/validation/order-wizard";
+import { cn } from "@/lib/utils";
 
 const steps = [
   "Player",
@@ -134,7 +138,6 @@ export function OrderWizard({
   paymentInstructions: PaymentInstructions;
   initialProfile: InitialProfile;
 }) {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<Draft>(() =>
     createBlankDraft(packages, initialProfile),
@@ -146,6 +149,10 @@ export function OrderWizard({
     {},
   );
   const [message, setMessage] = useState<string>();
+  const [submittedOrder, setSubmittedOrder] = useState<{
+    id: string;
+    number: string;
+  }>();
   const [hydrated, setHydrated] = useState(false);
   const [isSubmitting, startSubmission] = useTransition();
 
@@ -166,6 +173,15 @@ export function OrderWizard({
     (asset) => asset.assetType === "payment_proof",
   );
   const isUploading = Object.keys(uploadProgress).length > 0;
+  const stepErrors = useMemo(
+    () =>
+      steps.map((_, index) => getOrderWizardStepError(index, draft, assets)),
+    [assets, draft],
+  );
+  const incompleteDetailSteps = steps
+    .slice(0, -1)
+    .filter((_, index) => stepErrors[index] !== null);
+  const isReadyToSubmit = stepErrors[steps.length - 1] === null;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -194,23 +210,26 @@ export function OrderWizard({
   }, [initialProfile, packages]);
 
   useEffect(() => {
-    if (hydrated) {
+    if (hydrated && !submittedOrder) {
       window.localStorage.setItem(
         storageKey,
         JSON.stringify({ draft, draftId, assets }),
       );
     }
-  }, [assets, draft, draftId, hydrated]);
+  }, [assets, draft, draftId, hydrated, submittedOrder]);
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (hasDraftContent(draft) || assets.length > 0 || isUploading) {
+      if (
+        !submittedOrder &&
+        (hasDraftContent(draft) || assets.length > 0 || isUploading)
+      ) {
         event.preventDefault();
       }
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [assets.length, draft, isUploading]);
+  }, [assets.length, draft, isUploading, submittedOrder]);
 
   const update = <Key extends keyof Draft>(field: Key, value: Draft[Key]) => {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -340,19 +359,15 @@ export function OrderWizard({
   };
 
   const nextStep = () => {
-    const error = validateStep(step, draft, assets);
-    if (error) {
-      setMessage(error);
-      return;
-    }
     setMessage(undefined);
     setStep((value) => Math.min(steps.length - 1, value + 1));
   };
 
   const submit = () => {
-    const error = validateStep(8, draft, assets);
-    if (error) {
-      setMessage(error);
+    const firstIncompleteStep = stepErrors.findIndex((error) => error !== null);
+    if (firstIncompleteStep !== -1) {
+      setStep(firstIncompleteStep);
+      setMessage(stepErrors[firstIncompleteStep] ?? undefined);
       return;
     }
 
@@ -399,8 +414,7 @@ export function OrderWizard({
         }
 
         window.localStorage.removeItem(storageKey);
-        router.push(`/orders/${result.orderId}?submitted=1`);
-        router.refresh();
+        setSubmittedOrder({ id: result.orderId, number: result.orderNumber });
       } catch (submissionError) {
         setMessage(
           submissionError instanceof Error
@@ -411,6 +425,10 @@ export function OrderWizard({
     });
   };
 
+  if (submittedOrder) {
+    return <OrderSuccess order={submittedOrder} />;
+  }
+
   return (
     <div className="grid gap-7 lg:grid-cols-[15rem_1fr]">
       <aside className="h-fit rounded-2xl border border-black/10 bg-white p-5 lg:sticky lg:top-28">
@@ -419,23 +437,56 @@ export function OrderWizard({
         </div>
         <Progress value={((step + 1) / steps.length) * 100} className="mt-4" />
         <ol className="mt-5 space-y-1">
-          {steps.map((label, index) => (
-            <li key={label}>
-              <button
-                type="button"
-                onClick={() => setStep(index)}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm ${index === step ? "bg-neutral-950 font-bold text-white" : "text-neutral-500 hover:bg-neutral-100"}`}
-              >
-                <span
-                  className={`grid size-6 place-items-center rounded-full text-xs ${index < step ? "bg-primary text-black" : "bg-neutral-100 text-neutral-600"}`}
+          {steps.map((label, index) => {
+            const isComplete = stepErrors[index] === null;
+            const isCurrent = index === step;
+
+            return (
+              <li key={label}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMessage(undefined);
+                    setStep(index);
+                  }}
+                  aria-current={isCurrent ? "step" : undefined}
+                  aria-label={`${label}: ${isComplete ? "complete" : "needs attention"}`}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${isCurrent ? "bg-neutral-950 font-bold text-white" : "text-neutral-500 hover:bg-neutral-100"}`}
                 >
-                  {index < step ? <Check className="size-3" /> : index + 1}
-                </span>
-                {label}
-              </button>
-            </li>
-          ))}
+                  <span
+                    className={cn(
+                      "grid size-6 place-items-center rounded-full text-xs transition",
+                      isComplete
+                        ? "bg-primary text-black"
+                        : isCurrent
+                          ? "bg-[#f0643b] text-white"
+                          : "border border-[#f0643b]/30 bg-[#f0643b]/10 text-[#c64020]",
+                    )}
+                  >
+                    {isComplete ? (
+                      <Check className="size-3.5" aria-hidden="true" />
+                    ) : (
+                      <CircleAlert className="size-3.5" aria-hidden="true" />
+                    )}
+                  </span>
+                  {label}
+                </button>
+              </li>
+            );
+          })}
         </ol>
+        <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 border-t border-black/8 pt-4 text-[11px] font-semibold text-neutral-500">
+          <span className="flex items-center gap-1.5">
+            <span className="bg-primary grid size-4 place-items-center rounded-full text-black">
+              <Check className="size-2.5" aria-hidden="true" />
+            </span>
+            Complete
+          </span>
+          <span className="flex items-center gap-1.5">
+            <CircleAlert className="size-4 text-[#d64b27]" aria-hidden="true" />
+            Needs attention
+          </span>
+        </div>
       </aside>
 
       <section className="rounded-2xl border border-black/10 bg-white p-6 sm:p-9">
@@ -885,6 +936,34 @@ export function OrderWizard({
 
           {step === 8 && (
             <div className="space-y-5">
+              <div
+                className={cn(
+                  "rounded-xl border px-4 py-3 text-sm",
+                  incompleteDetailSteps.length === 0
+                    ? draft.confirmedAccurate
+                      ? "border-lime-300 bg-lime-50 text-lime-950"
+                      : "border-[#f0643b]/30 bg-[#f0643b]/8 text-[#9f3219]"
+                    : "border-[#f0643b]/30 bg-[#f0643b]/8 text-[#9f3219]",
+                )}
+              >
+                {incompleteDetailSteps.length > 0 ? (
+                  <p>
+                    <strong>Needs attention:</strong>{" "}
+                    {incompleteDetailSteps.join(", ")}. Use the tabs to complete
+                    the missing details.
+                  </p>
+                ) : draft.confirmedAccurate ? (
+                  <p>
+                    <strong>Ready to submit.</strong> Every required detail and
+                    upload is complete.
+                  </p>
+                ) : (
+                  <p>
+                    <strong>Almost ready.</strong> Review the summary and
+                    confirm it below to unlock submission.
+                  </p>
+                )}
+              </div>
               <div className="grid gap-5 rounded-xl bg-neutral-100 p-5 sm:grid-cols-2">
                 <ReviewItem label="Player" value={draft.playerName} />
                 <ReviewItem label="Tournament" value={draft.tournamentName} />
@@ -947,7 +1026,7 @@ export function OrderWizard({
             <Button
               type="button"
               onClick={submit}
-              disabled={isUploading || isSubmitting}
+              disabled={isUploading || isSubmitting || !isReadyToSubmit}
             >
               {isSubmitting ? "Submitting securely…" : "Submit order"}
             </Button>
@@ -955,6 +1034,61 @@ export function OrderWizard({
         </div>
       </section>
     </div>
+  );
+}
+
+function OrderSuccess({ order }: { order: { id: string; number: string } }) {
+  return (
+    <section
+      role="status"
+      aria-live="polite"
+      className="reveal-up relative isolate overflow-hidden rounded-[2rem] border border-black/10 bg-neutral-950 px-6 py-12 text-center text-white shadow-[0_30px_100px_rgba(30,40,10,.2)] sm:px-10 sm:py-16"
+    >
+      <div className="court-grid pointer-events-none absolute inset-0 opacity-30" />
+      <div className="bg-primary/20 pointer-events-none absolute top-1/2 left-1/2 size-72 -translate-x-1/2 -translate-y-1/2 rounded-full blur-[90px]" />
+
+      <div className="order-success-stage relative mx-auto" aria-hidden="true">
+        <div className="order-success-rays">
+          {Array.from({ length: 8 }, (_, index) => (
+            <span key={`ray-${index}`} className="order-success-ray" />
+          ))}
+        </div>
+        <div className="order-success-dots">
+          {Array.from({ length: 10 }, (_, index) => (
+            <span key={`dot-${index}`} className="order-success-dot" />
+          ))}
+        </div>
+        <div className="order-success-mark">
+          <Crosshair className="absolute size-24 text-white/15" />
+          <Check className="size-10" strokeWidth={3} />
+        </div>
+      </div>
+
+      <div className="relative mx-auto mt-6 max-w-xl">
+        <p className="text-primary text-xs font-bold tracking-[0.22em] uppercase">
+          Order locked in
+        </p>
+        <h2 className="font-heading mt-3 text-5xl font-bold tracking-[-0.04em] sm:text-6xl">
+          FRAME COMPLETE.
+        </h2>
+        <p className="mt-4 text-base leading-7 text-neutral-300">
+          Your brief and payment receipt are safely with DINKFRAME. We&apos;ll
+          review everything shortly.
+        </p>
+        <div className="mx-auto mt-6 w-fit rounded-full border border-white/12 bg-white/8 px-5 py-2 text-sm font-bold">
+          {order.number}
+        </div>
+        <Link
+          href={`/orders/${order.id}`}
+          className={cn(
+            buttonVariants({ size: "lg" }),
+            "mt-8 rounded-full px-6 font-bold",
+          )}
+        >
+          Track order status <ArrowRight />
+        </Link>
+      </div>
+    </section>
   );
 }
 
@@ -1004,71 +1138,6 @@ function PaymentDetail({
       )}
     </div>
   );
-}
-
-function validateStep(
-  step: number,
-  draft: Draft,
-  assets: UploadedAssetInput[],
-): string | null {
-  if (
-    step === 0 &&
-    (draft.playerName.trim().length < 2 || draft.whatsapp.trim().length < 8)
-  )
-    return "Add the player name and WhatsApp number.";
-  if (
-    step === 1 &&
-    (!draft.tournamentName.trim() ||
-      !draft.tournamentLocation.trim() ||
-      !draft.tournamentStartDate ||
-      !draft.tournamentEndDate)
-  )
-    return "Complete the tournament name, dates, and location.";
-  if (step === 1 && draft.tournamentEndDate < draft.tournamentStartDate)
-    return "Tournament end date must be on or after the start date.";
-  if (
-    step === 1 &&
-    assets.filter((asset) => asset.assetType === "tournament_logo").length !== 1
-  )
-    return "Upload the tournament logo.";
-  if (
-    step === 2 &&
-    draft.events.some((event) => event.eventName.trim().length < 2)
-  )
-    return "Add a name for every event.";
-  if (step === 3) {
-    const count = assets.filter(
-      (asset) => asset.assetType === "player_photo",
-    ).length;
-    if (count < 2 || count > 8)
-      return "Upload between two and eight player photos.";
-  }
-  if (
-    step === 4 &&
-    draft.sponsors.some((sponsor) => sponsor.companyName.trim().length < 2)
-  )
-    return "Complete or remove each sponsor name.";
-  if (
-    step === 5 &&
-    draft.colorPreference === "custom" &&
-    !/^#[0-9a-fA-F]{6}$/.test(draft.customColor)
-  )
-    return "Choose a valid custom color.";
-  if (step === 6 && !draft.packageSlug) return "Choose a package.";
-  if (
-    step === 7 &&
-    assets.filter((asset) => asset.assetType === "payment_proof").length !== 1
-  )
-    return "Upload one payment proof.";
-  if (step === 8) {
-    for (let index = 0; index < 8; index += 1) {
-      const error: string | null = validateStep(index, draft, assets);
-      if (error) return error;
-    }
-    if (!draft.confirmedAccurate)
-      return "Confirm that the order information and assets are correct.";
-  }
-  return null;
 }
 
 function hasDraftContent(draft: Draft) {
