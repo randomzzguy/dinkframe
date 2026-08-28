@@ -36,7 +36,11 @@ type ClaimedJob = {
   assets: ClaimedGenerationAsset[];
 };
 
-void main();
+void main().then(() => {
+  // A CDP WebSocket can keep Node alive even after the job has finished. Exiting
+  // here disconnects this runner while leaving the dedicated browser open.
+  process.exit(process.exitCode ?? 0);
+});
 
 async function main() {
   let activeJob: ClaimedJob | null = null;
@@ -168,21 +172,18 @@ async function prepareChat(page: Page, job: ClaimedJob, localAssets: string[]) {
 
   const composer = page.locator("#prompt-textarea").first();
   await composer.waitFor({ state: "visible", timeout: 60_000 });
+  await clearUnsentAttachments(page);
   await composer.fill(job.inputText);
 
   if (localAssets.length) {
     const fileInput = await findFileInput(page);
     await fileInput.setInputFiles(localAssets);
-    for (const assetPath of localAssets) {
-      await page
-        .getByText(path.basename(assetPath), { exact: false })
-        .first()
-        .waitFor({ state: "visible", timeout: 120_000 });
-    }
+    await waitForAttachedFiles(page, localAssets);
   }
 
   const composerValue = await composer.evaluate((element) => {
     if (element instanceof HTMLTextAreaElement) return element.value;
+    if (element instanceof HTMLElement) return element.innerText;
     return element.textContent ?? "";
   });
   if (normalize(composerValue) !== normalize(job.inputText)) {
@@ -208,7 +209,7 @@ async function assertSignedIn(page: Page) {
 }
 
 async function findFileInput(page: Page) {
-  let input = page.locator('input[type="file"]').last();
+  let input = page.locator('input[type="file"]:not([accept])').first();
   if ((await input.count()) > 0) return input;
 
   const attachmentButton = page.getByRole("button", {
@@ -217,9 +218,39 @@ async function findFileInput(page: Page) {
   if (await attachmentButton.isVisible().catch(() => false)) {
     await attachmentButton.click();
   }
-  input = page.locator('input[type="file"]').last();
+  input = page.locator('input[type="file"]').first();
   await input.waitFor({ state: "attached", timeout: 15_000 });
   return input;
+}
+
+async function clearUnsentAttachments(page: Page) {
+  const removeButtons = page.locator('[aria-label^="Remove file"]');
+  while ((await removeButtons.count()) > 0) {
+    await removeButtons.first().click();
+  }
+}
+
+async function waitForAttachedFiles(page: Page, localAssets: string[]) {
+  const removeButtons = page.locator('[aria-label^="Remove file"]');
+  await removeButtons.first().waitFor({ state: "visible", timeout: 120_000 });
+  await page.waitForFunction(
+    (expectedCount) =>
+      document.querySelectorAll('[aria-label^="Remove file"]').length >=
+      expectedCount,
+    localAssets.length,
+    { timeout: 120_000 },
+  );
+
+  const labels = await removeButtons.evaluateAll((elements) =>
+    elements.map((element) => element.getAttribute("aria-label") ?? ""),
+  );
+  for (const assetPath of localAssets) {
+    if (!labels.some((label) => label.includes(path.basename(assetPath)))) {
+      throw new Error(
+        `${path.basename(assetPath)} was not attached to ChatGPT.`,
+      );
+    }
+  }
 }
 
 async function clickVerifiedSend(page: Page) {
@@ -264,7 +295,10 @@ function safeFilename(filename: string) {
 }
 
 function normalize(value: string) {
-  return value.replaceAll("\u00a0", " ").replaceAll("\r\n", "\n").trim();
+  return value
+    .replaceAll("\u00a0", " ")
+    .replaceAll(/\s+/g, " ")
+    .trim();
 }
 
 function normalizeLocalAppUrl(value: string) {
