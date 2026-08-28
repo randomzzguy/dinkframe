@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { OrderControls } from "@/components/admin/order-controls";
 import { ArchiveControls } from "@/components/admin/archive-controls";
+import { GenerationControls } from "@/components/admin/generation-controls";
 import { Badge } from "@/components/ui/badge";
 import { requireAdmin } from "@/lib/auth/guards";
 import { ORDER_STATUS_LABELS } from "@/lib/orders/status";
@@ -28,6 +29,7 @@ export default async function AdminOrderPage({
     assetResult,
     historyResult,
     amendmentResult,
+    generationJobResult,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -59,6 +61,11 @@ export default async function AdminOrderPage({
       .select("*")
       .eq("order_id", id)
       .order("amendment_number", { ascending: false }),
+    supabase
+      .from("generation_jobs")
+      .select("*")
+      .eq("order_id", id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const signedAssets = await Promise.all(
@@ -298,6 +305,13 @@ export default async function AdminOrderPage({
         </div>
       </div>
 
+      <div className="mt-5">
+        <GenerationControls
+          orderId={order.id}
+          paymentConfirmed={order.payment_status === "confirmed"}
+          jobs={generationJobResult.data ?? []}
+        />
+      </div>
       <div className="mt-5">
         <OrderControls
           orderId={order.id}

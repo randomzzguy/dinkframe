@@ -35,3 +35,15 @@ Submitted orders copy package name, price, poster count, and free amendment allo
 Status: accepted.
 
 Generating a ZIP records an export attempt but does not authorize deletion. The owner must open the local archive and explicitly verify it. A database trigger blocks unverified archive transitions, ordinary admin RLS has no direct order-delete policy, and the permanent-delete RPC requires archived state plus the exact order number.
+
+## ADR-007 — Human-selectable ChatGPT submission
+
+Status: accepted.
+
+Studio automation defaults to `review_required`, where the local companion prepares a verified message and attachments but stops before sending. The sole admin may enable `auto_send` for explicitly queued jobs. The selected mode is server-owned and will be snapshotted when a job is created; it never authorizes automatic response extraction, CAPTCHA handling, login approval, or submission when expected assets are missing.
+
+## ADR-008 — Hermes orchestrates a deterministic local companion
+
+Status: accepted.
+
+Hermes may schedule and report the repository-owned runner, but does not query Supabase or control job permissions directly. A dedicated bearer token reaches only the automation job API; service-role access stays inside Next.js. Playwright attaches to a dedicated localhost-only browser profile, and job leases make interrupted work recoverable. Prompt Studio output is copied manually into the image-generation stage, preserving the prohibition on automatic ChatGPT response extraction.

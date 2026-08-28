@@ -12,6 +12,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:rls:live": "node --env-file=.env.local scripts/live-rls-smoke.mjs",
+    "automation:browser": "node --env-file=.env.local scripts/start-companion-browser.mjs",
+    "automation:run": "node --env-file=.env.local --import tsx scripts/chatgpt-companion.ts",
+    "automation:token": "node scripts/generate-automation-token.mjs",
     "emails:build": "node scripts/generate-email-templates.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -46,9 +49,11 @@
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
+    "playwright-core": "^1.62.1",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5",
     "vitest": "^4.1.11"
   }

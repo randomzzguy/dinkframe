@@ -17,6 +17,8 @@ The original product specification is in [`DINKFRAME_APP_BUILD.md`](./DINKFRAME_
 - Owner-managed bank/DuitNow instructions and private payment QR
 - Streaming ZIP export with metadata and organized original assets
 - Human-verified archive lifecycle and order-number-confirmed audited deletion
+- Admin-queued Prompt Studio and image-generation jobs with a supervised local
+  Playwright companion and Hermes-friendly quiet runner
 - Normalized PostgreSQL schema, durable order drafts, seed records, RLS policies, private Storage buckets, safe yearly order numbering, status audit trigger, and amendment transaction
 - Typed package, order-status, amendment, order-number, validation, and upload-limit modules with unit tests
 
@@ -58,16 +60,27 @@ Requirements: Node.js 20.9 or newer, npm, and a Supabase project (local CLI or h
 
 ## Environment variables
 
-| Variable                               | Runtime     | Purpose                                                        |
-| -------------------------------------- | ----------- | -------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`             | Public      | Supabase project URL                                           |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public      | Supabase publishable/anon key                                  |
-| `SUPABASE_SERVICE_ROLE_KEY`            | Server only | Optional; currently unused by the authenticated owner workflow |
-| `ADMIN_EMAIL`                          | Server only | Sole admin email enforced by protected layouts                 |
-| `NEXT_PUBLIC_APP_URL`                  | Public      | Client app origin and magic-link callback base                 |
-| `NEXT_PUBLIC_SITE_URL`                 | Public      | Marketing origin, canonical URLs, and sitemap                  |
+| Variable                               | Runtime      | Purpose                                                         |
+| -------------------------------------- | ------------ | --------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Public       | Supabase project URL                                            |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public       | Supabase publishable/anon key                                   |
+| `SUPABASE_SERVICE_ROLE_KEY`            | Server only  | Narrow automation API and live RLS verification                 |
+| `DINKFRAME_AUTOMATION_RUNNER_TOKEN`    | Server/local | Authenticates the local companion without exposing service role |
+| `DINKFRAME_AUTOMATION_APP_URL`         | Local only   | Deployed or local DINKFRAME origin used by the companion        |
+| `DINKFRAME_BROWSER_CDP_URL`            | Local only   | Localhost CDP endpoint for the dedicated ChatGPT browser        |
+| `ADMIN_EMAIL`                          | Server only  | Sole admin email enforced by protected layouts                  |
+| `NEXT_PUBLIC_APP_URL`                  | Public       | Client app origin and magic-link callback base                  |
+| `NEXT_PUBLIC_SITE_URL`                 | Public       | Marketing origin, canonical URLs, and sitemap                   |
 
 Never expose the service-role key to a Client Component or prefix it with `NEXT_PUBLIC_`.
+
+## Studio automation
+
+The owner can queue Prompt Studio and image-generation jobs from each admin order
+page after payment is confirmed. The local companion snapshots the active
+review/auto-send setting, so later settings changes do not affect a job already
+in progress. Setup and Hermes scheduling are documented in
+[`docs/HERMES_AUTOMATION.md`](./docs/HERMES_AUTOMATION.md).
 
 ## Supabase setup
 

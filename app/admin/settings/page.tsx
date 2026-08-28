@@ -1,36 +1,41 @@
-import { ExternalLink, HardDrive, PackageCheck } from "lucide-react";
+import { Bot, ExternalLink, HardDrive, PackageCheck } from "lucide-react";
 
+import { AutomationSettingsForm } from "@/components/admin/automation-settings-form";
 import { PaymentSettingsForm } from "@/components/admin/payment-settings-form";
 import { requireAdmin } from "@/lib/auth/guards";
 
 export default async function AdminSettingsPage() {
   const { supabase } = await requireAdmin();
-  const [settingsResult, activeResult, archivedResult, assetsResult] =
-    await Promise.all([
-      supabase
-        .from("payment_settings")
-        .select("*")
-        .eq("id", true)
-        .maybeSingle(),
-      supabase
-        .from("orders")
-        .select("id", { count: "exact", head: true })
-        .neq("status", "archived"),
-      supabase
-        .from("orders")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "archived"),
-      supabase
-        .from("order_assets")
-        .select("id", { count: "exact", head: true }),
-    ]);
+  const [
+    paymentSettingsResult,
+    automationSettingsResult,
+    activeResult,
+    archivedResult,
+    assetsResult,
+  ] = await Promise.all([
+    supabase.from("payment_settings").select("*").eq("id", true).maybeSingle(),
+    supabase
+      .from("automation_settings")
+      .select("*")
+      .eq("id", true)
+      .maybeSingle(),
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .neq("status", "archived"),
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "archived"),
+    supabase.from("order_assets").select("id", { count: "exact", head: true }),
+  ]);
 
-  const settings = settingsResult.data;
-  const qrUrl = settings?.qr_image_path
+  const paymentSettings = paymentSettingsResult.data;
+  const qrUrl = paymentSettings?.qr_image_path
     ? ((
         await supabase.storage
           .from("payment-proofs")
-          .createSignedUrl(settings.qr_image_path, 300)
+          .createSignedUrl(paymentSettings.qr_image_path, 300)
       ).data?.signedUrl ?? null)
     : null;
 
@@ -62,6 +67,22 @@ export default async function AdminSettingsPage() {
       </div>
 
       <section className="mt-8 rounded-2xl border border-black/10 bg-white p-6 sm:p-8">
+        <div className="mb-7 flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-lime-100 text-lime-900">
+            <Bot className="size-5" />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold">Studio automation</h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              Choose whether the local ChatGPT companion pauses before sending a
+              prepared message.
+            </p>
+          </div>
+        </div>
+        <AutomationSettingsForm settings={automationSettingsResult.data} />
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-black/10 bg-white p-6 sm:p-8">
         <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold">Payment instructions</h2>
@@ -78,7 +99,7 @@ export default async function AdminSettingsPage() {
             Supabase dashboard <ExternalLink className="size-4" />
           </a>
         </div>
-        <PaymentSettingsForm settings={settings} qrUrl={qrUrl} />
+        <PaymentSettingsForm settings={paymentSettings} qrUrl={qrUrl} />
       </section>
     </div>
   );

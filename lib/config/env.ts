@@ -10,6 +10,7 @@ const publicEnvSchema = z.object({
 const serverEnvSchema = publicEnvSchema.extend({
   ADMIN_EMAIL: z.email(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  DINKFRAME_AUTOMATION_RUNNER_TOKEN: z.string().min(32).optional(),
 });
 
 export function getPublicEnv() {
@@ -31,5 +32,7 @@ export function getServerEnv() {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    DINKFRAME_AUTOMATION_RUNNER_TOKEN:
+      process.env.DINKFRAME_AUTOMATION_RUNNER_TOKEN,
   });
 }

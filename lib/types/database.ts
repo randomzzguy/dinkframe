@@ -326,6 +326,72 @@ export type Database = {
         >;
         Relationships: [];
       };
+      automation_settings: {
+        Row: {
+          id: boolean;
+          chatgpt_submission_mode: Database["public"]["Enums"]["chatgpt_submission_mode"];
+          updated_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: boolean;
+          chatgpt_submission_mode?: Database["public"]["Enums"]["chatgpt_submission_mode"];
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["automation_settings"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      generation_jobs: {
+        Row: {
+          id: string;
+          order_id: string;
+          stage: Database["public"]["Enums"]["generation_job_stage"];
+          status: Database["public"]["Enums"]["generation_job_status"];
+          submission_mode: Database["public"]["Enums"]["chatgpt_submission_mode"];
+          input_text: string;
+          prompt_template_version: string;
+          brief_snapshot: Json;
+          asset_manifest: Json;
+          runner_id: string | null;
+          attempt_count: number;
+          claimed_at: string | null;
+          lease_expires_at: string | null;
+          submitted_at: string | null;
+          completed_at: string | null;
+          last_error: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          stage: Database["public"]["Enums"]["generation_job_stage"];
+          status?: Database["public"]["Enums"]["generation_job_status"];
+          submission_mode: Database["public"]["Enums"]["chatgpt_submission_mode"];
+          input_text: string;
+          prompt_template_version: string;
+          brief_snapshot?: Json;
+          asset_manifest?: Json;
+          runner_id?: string | null;
+          attempt_count?: number;
+          claimed_at?: string | null;
+          lease_expires_at?: string | null;
+          submitted_at?: string | null;
+          completed_at?: string | null;
+          last_error?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["generation_jobs"]["Insert"]
+        >;
+        Relationships: [];
+      };
       amendments: {
         Row: {
           id: string;
@@ -437,6 +503,19 @@ export type Database = {
         Args: { target_order_id: string; confirmation_number: string };
         Returns: Json;
       };
+      claim_generation_job: {
+        Args: { target_runner_id: string; lease_seconds?: number };
+        Returns: Database["public"]["Tables"]["generation_jobs"]["Row"];
+      };
+      update_generation_job_from_runner: {
+        Args: {
+          target_job_id: string;
+          target_runner_id: string;
+          next_status: Database["public"]["Enums"]["generation_job_status"];
+          job_error?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["generation_jobs"]["Row"];
+      };
     };
     Enums: {
       amendment_billing_kind: "free" | "paid_required" | "paid_confirmed";
@@ -459,6 +538,16 @@ export type Database = {
         | "cancelled";
       payment_status: "pending" | "proof_uploaded" | "confirmed" | "rejected";
       profile_role: "client" | "admin";
+      chatgpt_submission_mode: "review_required" | "auto_send";
+      generation_job_stage: "prompt_generation" | "image_generation";
+      generation_job_status:
+        | "queued"
+        | "claimed"
+        | "preparing"
+        | "awaiting_review"
+        | "submitted"
+        | "failed"
+        | "cancelled";
     };
     CompositeTypes: Record<never, never>;
   };

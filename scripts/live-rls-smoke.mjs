@@ -83,6 +83,40 @@ try {
     "client B could write to client A's draft",
   );
 
+  const { data: clientAutomationSettings, error: clientSettingsError } =
+    await secondClient.from("automation_settings").select("id");
+  assertNoError(
+    clientSettingsError,
+    "client automation-settings query failed unexpectedly",
+  );
+  assert(
+    clientAutomationSettings.length === 0,
+    "a client could read admin automation settings",
+  );
+
+  const { data: clientGenerationJobs, error: clientGenerationJobsError } =
+    await secondClient.from("generation_jobs").select("id");
+  assertNoError(
+    clientGenerationJobsError,
+    "client generation-jobs query failed unexpectedly",
+  );
+  assert(
+    clientGenerationJobs.length === 0,
+    "a client could read admin generation jobs",
+  );
+
+  const { error: clientClaimError } = await secondClient.rpc(
+    "claim_generation_job",
+    {
+      target_runner_id: "unauthorized-client",
+      lease_seconds: 900,
+    },
+  );
+  assert(
+    clientClaimError,
+    "an authenticated client could execute the runner-only claim function",
+  );
+
   const { error: promoteError } = await admin
     .from("profiles")
     .update({ role: "admin" })
@@ -102,6 +136,31 @@ try {
   assert(
     visibleProfiles.length === 2,
     "admin could not read all scoped profiles",
+  );
+
+  const { data: automationSettings, error: automationSettingsError } =
+    await firstClient
+      .from("automation_settings")
+      .select("chatgpt_submission_mode")
+      .eq("id", true)
+      .single();
+  assertNoError(
+    automationSettingsError,
+    "admin could not read automation settings",
+  );
+  assert(
+    automationSettings?.chatgpt_submission_mode === "review_required" ||
+      automationSettings?.chatgpt_submission_mode === "auto_send",
+    "admin received an invalid ChatGPT submission mode",
+  );
+
+  const { error: adminGenerationJobsError } = await firstClient
+    .from("generation_jobs")
+    .select("id")
+    .limit(1);
+  assertNoError(
+    adminGenerationJobsError,
+    "admin could not read generation jobs",
   );
 
   console.log("Live RLS smoke test passed.");

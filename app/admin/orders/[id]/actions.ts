@@ -6,6 +6,17 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import {
+  buildPromptStudioMessage,
+  IMAGE_GENERATION_TEMPLATE_VERSION,
+  PROMPT_STUDIO_TEMPLATE_VERSION,
+  selectManifestForStage,
+  toJson,
+  validateManifestForStage,
+  type GenerationAssetManifestItem,
+  type GenerationBriefSnapshot,
+  type GenerationJobStage,
+} from "@/lib/automation/generation";
 import { requireAdmin } from "@/lib/auth/guards";
 import {
   isStandardStatusTransition,
@@ -38,6 +49,21 @@ const deleteOrderSchema = z.object({
   orderId: z.uuid(),
   confirmationNumber: z.string().trim().min(1).max(40),
 });
+const imageGenerationSchema = z.object({
+  orderId: z.uuid(),
+  generatedPrompt: z.string().trim().min(100).max(50000),
+});
+const generationJobSchema = z.object({
+  orderId: z.uuid(),
+  jobId: z.uuid(),
+});
+
+const ACTIVE_GENERATION_STATUSES = [
+  "queued",
+  "claimed",
+  "preparing",
+  "awaiting_review",
+] as const;
 
 export async function changeOrderStatus(
   _previousState: AdminActionState,
@@ -116,6 +142,150 @@ export async function changePaymentStatus(
   revalidatePath("/admin/orders");
   revalidatePath(`/orders/${parsed.data.orderId}`);
   return { status: "success", message: "Payment status updated." };
+}
+
+export async function queuePromptGeneration(
+  _previousState: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const parsed = orderIdSchema.safeParse({ orderId: formData.get("orderId") });
+  if (!parsed.success) {
+    return { status: "error", message: "The order reference is invalid." };
+  }
+
+  return queueGenerationJob({
+    orderId: parsed.data.orderId,
+    stage: "prompt_generation",
+  });
+}
+
+export async function queueImageGeneration(
+  _previousState: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const parsed = imageGenerationSchema.safeParse({
+    orderId: formData.get("orderId"),
+    generatedPrompt: formData.get("generatedPrompt"),
+  });
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: "Paste the complete generated prompt before queuing the image.",
+    };
+  }
+
+  return queueGenerationJob({
+    orderId: parsed.data.orderId,
+    stage: "image_generation",
+    generatedPrompt: parsed.data.generatedPrompt,
+  });
+}
+
+export async function cancelGenerationJob(
+  _previousState: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const parsed = generationJobSchema.safeParse({
+    orderId: formData.get("orderId"),
+    jobId: formData.get("jobId"),
+  });
+  if (!parsed.success) {
+    return { status: "error", message: "The generation job is invalid." };
+  }
+
+  const { supabase } = await requireAdmin();
+  const { data, error } = await supabase
+    .from("generation_jobs")
+    .update({
+      status: "cancelled",
+      completed_at: new Date().toISOString(),
+      lease_expires_at: null,
+    })
+    .eq("id", parsed.data.jobId)
+    .eq("order_id", parsed.data.orderId)
+    .in("status", [...ACTIVE_GENERATION_STATUSES])
+    .select("id")
+    .maybeSingle();
+  if (error) return adminError("generation_job_cancel_failed", error);
+  if (!data) {
+    return { status: "error", message: "This job can no longer be cancelled." };
+  }
+
+  revalidateOrderPaths(parsed.data.orderId);
+  return { status: "success", message: "Generation job cancelled." };
+}
+
+export async function retryGenerationJob(
+  _previousState: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const parsed = generationJobSchema.safeParse({
+    orderId: formData.get("orderId"),
+    jobId: formData.get("jobId"),
+  });
+  if (!parsed.success) {
+    return { status: "error", message: "The generation job is invalid." };
+  }
+
+  const { supabase } = await requireAdmin();
+  const { data, error } = await supabase
+    .from("generation_jobs")
+    .update({
+      status: "queued",
+      runner_id: null,
+      claimed_at: null,
+      lease_expires_at: null,
+      completed_at: null,
+      last_error: null,
+    })
+    .eq("id", parsed.data.jobId)
+    .eq("order_id", parsed.data.orderId)
+    .eq("status", "failed")
+    .select("id")
+    .maybeSingle();
+  if (error) return adminError("generation_job_retry_failed", error);
+  if (!data) {
+    return { status: "error", message: "Only failed jobs can be retried." };
+  }
+
+  revalidateOrderPaths(parsed.data.orderId);
+  return { status: "success", message: "Generation job queued again." };
+}
+
+export async function markGenerationJobSubmitted(
+  _previousState: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const parsed = generationJobSchema.safeParse({
+    orderId: formData.get("orderId"),
+    jobId: formData.get("jobId"),
+  });
+  if (!parsed.success) {
+    return { status: "error", message: "The generation job is invalid." };
+  }
+
+  const now = new Date().toISOString();
+  const { supabase } = await requireAdmin();
+  const { data, error } = await supabase
+    .from("generation_jobs")
+    .update({
+      status: "submitted",
+      submitted_at: now,
+      completed_at: now,
+      lease_expires_at: null,
+    })
+    .eq("id", parsed.data.jobId)
+    .eq("order_id", parsed.data.orderId)
+    .eq("status", "awaiting_review")
+    .select("id")
+    .maybeSingle();
+  if (error) return adminError("generation_job_mark_sent_failed", error);
+  if (!data) {
+    return { status: "error", message: "This job is not waiting for review." };
+  }
+
+  revalidateOrderPaths(parsed.data.orderId);
+  return { status: "success", message: "Job marked as sent." };
 }
 
 export async function verifyLocalArchive(
@@ -229,6 +399,151 @@ function revalidateOrderPaths(orderId: string) {
   revalidatePath("/admin");
   revalidatePath("/admin/orders");
   revalidatePath(`/orders/${orderId}`);
+}
+
+async function queueGenerationJob({
+  orderId,
+  stage,
+  generatedPrompt,
+}: {
+  orderId: string;
+  stage: GenerationJobStage;
+  generatedPrompt?: string;
+}): Promise<AdminActionState> {
+  const { claims, supabase } = await requireAdmin();
+  const [
+    orderResult,
+    eventResult,
+    sponsorResult,
+    assetResult,
+    settingsResult,
+    activeJobResult,
+  ] = await Promise.all([
+    supabase.from("orders").select("*").eq("id", orderId).maybeSingle(),
+    supabase
+      .from("order_event_details")
+      .select("event_name, partner_name")
+      .eq("order_id", orderId)
+      .order("sort_order"),
+    supabase
+      .from("sponsors")
+      .select("company_name")
+      .eq("order_id", orderId)
+      .order("created_at"),
+    supabase
+      .from("order_assets")
+      .select("*")
+      .eq("order_id", orderId)
+      .order("created_at"),
+    supabase
+      .from("automation_settings")
+      .select("chatgpt_submission_mode")
+      .eq("id", true)
+      .maybeSingle(),
+    supabase
+      .from("generation_jobs")
+      .select("id")
+      .eq("order_id", orderId)
+      .eq("stage", stage)
+      .in("status", [...ACTIVE_GENERATION_STATUSES])
+      .limit(1),
+  ]);
+
+  const lookupError =
+    orderResult.error ??
+    eventResult.error ??
+    sponsorResult.error ??
+    assetResult.error ??
+    settingsResult.error ??
+    activeJobResult.error;
+  if (lookupError)
+    return adminError("generation_job_source_lookup_failed", lookupError);
+
+  const order = orderResult.data;
+  if (!order) return { status: "error", message: "Order not found." };
+  if (order.payment_status !== "confirmed") {
+    return {
+      status: "error",
+      message: "Confirm payment before sending this order into production.",
+    };
+  }
+  if (order.status === "archived" || order.status === "cancelled") {
+    return { status: "error", message: "This order is no longer active." };
+  }
+  if (activeJobResult.data?.length) {
+    return {
+      status: "error",
+      message: "This stage already has an active generation job.",
+    };
+  }
+
+  const allAssets: GenerationAssetManifestItem[] = (assetResult.data ?? []).map(
+    (asset) => ({
+      id: asset.id,
+      assetType: asset.asset_type,
+      bucketId: asset.bucket_id,
+      storagePath: asset.storage_path,
+      originalFilename: asset.original_filename,
+      mimeType: asset.mime_type,
+      fileSize: asset.file_size,
+    }),
+  );
+  const assetError = validateManifestForStage(stage, allAssets);
+  if (assetError) return { status: "error", message: assetError };
+
+  const snapshot: GenerationBriefSnapshot = {
+    orderNumber: order.order_number,
+    playerName: order.player_name,
+    instagramHandle: order.instagram_handle,
+    whatsapp: order.whatsapp,
+    tournamentName: order.tournament_name,
+    tournamentStartDate: order.tournament_start_date,
+    tournamentEndDate: order.tournament_end_date,
+    tournamentLocation: order.tournament_location,
+    packageName: order.package_name_snapshot,
+    posterCount: order.poster_count_snapshot,
+    colorPreference: order.color_preference,
+    customColor: order.custom_color,
+    themePreference: order.theme_preference,
+    customNotes: order.custom_notes,
+    referenceUrl: order.reference_url,
+    preferredCompletionDate: order.preferred_completion_date,
+    events: (eventResult.data ?? []).map((event) => ({
+      eventName: event.event_name,
+      partnerName: event.partner_name,
+    })),
+    sponsors: (sponsorResult.data ?? []).map((sponsor) => sponsor.company_name),
+  };
+  const selectedAssets = selectManifestForStage(stage, allAssets);
+  const inputText =
+    stage === "prompt_generation"
+      ? buildPromptStudioMessage(snapshot)
+      : (generatedPrompt ?? "");
+
+  const { error } = await supabase.from("generation_jobs").insert({
+    order_id: orderId,
+    stage,
+    submission_mode:
+      settingsResult.data?.chatgpt_submission_mode ?? "review_required",
+    input_text: inputText,
+    prompt_template_version:
+      stage === "prompt_generation"
+        ? PROMPT_STUDIO_TEMPLATE_VERSION
+        : IMAGE_GENERATION_TEMPLATE_VERSION,
+    brief_snapshot: toJson(snapshot),
+    asset_manifest: toJson(selectedAssets),
+    created_by: typeof claims.sub === "string" ? claims.sub : null,
+  });
+  if (error) return adminError("generation_job_insert_failed", error);
+
+  revalidateOrderPaths(orderId);
+  return {
+    status: "success",
+    message:
+      stage === "prompt_generation"
+        ? "Prompt Studio job queued."
+        : "Image-generation job queued.",
+  };
 }
 
 function adminError(event: string, error: unknown): AdminActionState {

@@ -69,9 +69,12 @@ Where it lives:
 - Admin shell: `components/shared/app-shell.tsx`
 - Searchable production queue: `app/admin/orders/page.tsx`
 - Payment settings: `app/admin/settings` and `components/admin/payment-settings-form.tsx`
+- ChatGPT submission mode: `components/admin/automation-settings-form.tsx`
+- Per-order production queue: `components/admin/generation-controls.tsx`
+- Hermes/local companion runbook: `docs/HERMES_AUTOMATION.md`
 - Sole-admin server check: `lib/auth/guards.ts`
 
-Rule to remember: there is one owner, not a team-permissions product. The configured `ADMIN_EMAIL` and the `profiles.role = 'admin'` RLS identity must both match.
+Rule to remember: there is one owner, not a team-permissions product. The configured `ADMIN_EMAIL` and the `profiles.role = 'admin'` RLS identity must both match. Studio automation defaults to review-before-send; auto-send is an admin-owned permission for deliberately queued messages, not a blanket trigger for incoming orders.
 
 ## The job board — order state
 
@@ -93,7 +96,7 @@ Rule to remember: uploading proof does not confirm payment. Only the owner chang
 
 What it holds:
 
-- Postgres: profiles, order metadata, package snapshots, events, amendments, and audit records
+- Postgres: profiles, order metadata, package snapshots, events, amendments, automation settings, generation jobs, and audit records
 - Private Storage: original creative assets and payment proofs
 
 Where it lives:
@@ -103,8 +106,9 @@ Where it lives:
 - Submission workflow: `supabase/migrations/202608260003_order_workflow.sql`
 - Archive safeguards: `supabase/migrations/202608260004_archive_and_settings.sql`
 - Type contract: `lib/types/database.ts`
+- Runner endpoints: `app/api/automation/jobs`
 
-Rule to remember: files never live in Postgres. A client must not read another client’s row or object even if they guess an ID or path. Service-role access is reserved for narrow server-only operations.
+Rule to remember: files never live in Postgres. A client must not read another client’s row or object even if they guess an ID or path. Service-role access is reserved for narrow server-only operations. The ChatGPT submission preference is an admin-only singleton and each future generation job snapshots the active mode.
 
 ## The amendment counter — commercial rules
 
@@ -142,6 +146,6 @@ If any of these turn red, stop and fix the foundation before adding features:
 
 ## Current build marker
 
-Local MVP foundation complete: project configuration, all route surfaces, public site, magic-link session plumbing, guarded layouts, editable repeat-client profiles, durable draft IDs, resumable private uploads, atomic order submission, signed asset views, client amendments, a searchable admin queue, admin payment/status actions, payment settings and QR management, streaming ZIP exports, verified archive/delete controls, typed domain logic, tests, schema, seeds, RLS, and private buckets.
+Local MVP foundation complete: project configuration, all route surfaces, public site, magic-link session plumbing, guarded layouts, editable repeat-client profiles, durable draft IDs, resumable private uploads, atomic order submission, signed asset views, client amendments, a searchable admin queue, admin payment/status actions, payment settings and QR management, an admin-queued ChatGPT production pipeline, streaming ZIP exports, verified archive/delete controls, typed domain logic, tests, schema, seeds, RLS, and private buckets.
 
 Next slice: connect a Supabase project, apply and validate migrations, run automated RLS integration tests, then perform browser smoke tests and deploy to Vercel.

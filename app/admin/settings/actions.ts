@@ -5,12 +5,16 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { submissionModeFromAutoSendValue } from "@/lib/automation/submission-mode";
 import { requireAdmin } from "@/lib/auth/guards";
 
-export type PaymentSettingsActionState = {
+type SettingsActionState = {
   status: "idle" | "success" | "error";
   message: string;
 };
+
+export type PaymentSettingsActionState = SettingsActionState;
+export type AutomationSettingsActionState = SettingsActionState;
 
 const paymentSettingsSchema = z
   .object({
@@ -89,14 +93,38 @@ export async function updatePaymentSettings(
   return { status: "success", message: "Payment instructions saved." };
 }
 
+export async function updateAutomationSettings(
+  _previousState: AutomationSettingsActionState,
+  formData: FormData,
+): Promise<AutomationSettingsActionState> {
+  const submissionMode = submissionModeFromAutoSendValue(
+    formData.get("autoSend"),
+  );
+  const { claims, supabase } = await requireAdmin();
+  const { error } = await supabase.from("automation_settings").upsert({
+    id: true,
+    chatgpt_submission_mode: submissionMode,
+    updated_by: typeof claims.sub === "string" ? claims.sub : null,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) return settingsError("automation_settings_update_failed", error);
+
+  revalidatePath("/admin/settings");
+  return {
+    status: "success",
+    message:
+      submissionMode === "auto_send"
+        ? "Auto-send enabled for explicitly queued jobs."
+        : "Review before sending enabled.",
+  };
+}
+
 function textOrUndefined(value: FormDataEntryValue | null) {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
-function settingsError(
-  event: string,
-  error: unknown,
-): PaymentSettingsActionState {
+function settingsError(event: string, error: unknown): SettingsActionState {
   const errorId = randomUUID();
   console.error(event, { errorId, error });
   return {
