@@ -3,24 +3,26 @@
 import { randomUUID } from "node:crypto";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/guards";
 import { profileDetailsSchema } from "@/lib/validation/profile";
 
-export type ProfileActionState = {
-  status: "idle" | "success" | "error";
+export type OnboardingActionState = {
+  status: "idle" | "error";
   message: string;
 };
 
-export async function updateProfile(
-  _previousState: ProfileActionState,
+export async function completeOnboarding(
+  _previousState: OnboardingActionState,
   formData: FormData,
-): Promise<ProfileActionState> {
+): Promise<OnboardingActionState> {
   const parsed = profileDetailsSchema.safeParse({
     fullName: formData.get("fullName") ?? "",
     whatsapp: formData.get("whatsapp") ?? "",
     instagramHandle: formData.get("instagramHandle") ?? "",
   });
+
   if (!parsed.success) {
     return {
       status: "error",
@@ -29,27 +31,28 @@ export async function updateProfile(
   }
 
   const { claims, supabase } = await requireUser();
-  const userId = typeof claims.sub === "string" ? claims.sub : "";
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .update({
       full_name: parsed.data.fullName,
       whatsapp: parsed.data.whatsapp ?? null,
       instagram_handle: parsed.data.instagramHandle ?? null,
     })
-    .eq("id", userId);
+    .eq("id", claims.sub)
+    .select("id")
+    .maybeSingle();
 
-  if (error) {
+  if (error || !data) {
     const errorId = randomUUID();
-    console.error("profile_update_failed", { errorId, error });
+    console.error("onboarding_profile_update_failed", { errorId, error });
     return {
       status: "error",
       message: `We couldn't save your profile. Reference: ${errorId}`,
     };
   }
 
-  revalidatePath("/profile");
   revalidatePath("/dashboard");
+  revalidatePath("/profile");
   revalidatePath("/orders/new");
-  return { status: "success", message: "Profile saved." };
+  redirect("/dashboard");
 }

@@ -48,20 +48,24 @@ export function ProfileForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="whatsapp">WhatsApp</Label>
+        <Label htmlFor="whatsapp">WhatsApp (optional)</Label>
         <Input
           id="whatsapp"
           name="whatsapp"
-          required
           minLength={8}
           maxLength={30}
           defaultValue={whatsapp ?? ""}
           autoComplete="tel"
+          inputMode="tel"
           placeholder="+60 12-345 6789"
         />
+        <p className="text-xs text-neutral-500">
+          You can add this later. A contact number is still required when
+          placing an order.
+        </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="instagramHandle">Instagram handle</Label>
+        <Label htmlFor="instagramHandle">Instagram handle (optional)</Label>
         <Input
           id="instagramHandle"
           name="instagramHandle"

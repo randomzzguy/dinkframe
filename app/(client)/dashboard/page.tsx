@@ -19,7 +19,7 @@ export default async function DashboardPage() {
     .eq("client_id", claims.sub)
     .neq("status", "archived")
     .order("created_at", { ascending: false });
-  const firstName = profile?.full_name?.split(" ")[0] ?? "there";
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0] || "Player";
 
   return (
     <>
@@ -27,7 +27,7 @@ export default async function DashboardPage() {
         <div>
           <p className="eyebrow">Your orders</p>
           <h1 className="font-heading mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-            Welcome, {firstName}.
+            Welcome back, {firstName}.
           </h1>
         </div>
         <Link

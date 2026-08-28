@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { needsOnboarding } from "@/lib/auth/onboarding";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -12,13 +13,27 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(
+    const { data, error } = await supabase.auth.exchangeCodeForSession(
       code,
       flowId ? { flowId } : undefined,
     );
 
     if (!error) {
-      return NextResponse.redirect(new URL(safeNext, requestUrl.origin));
+      let destination = safeNext;
+
+      if (data.user) {
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        if (!profileError && needsOnboarding(profile?.full_name)) {
+          destination = "/onboarding";
+        }
+      }
+
+      return NextResponse.redirect(new URL(destination, requestUrl.origin));
     }
   }
 
