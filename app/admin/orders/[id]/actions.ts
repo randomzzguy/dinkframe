@@ -19,11 +19,15 @@ import {
 } from "@/lib/automation/generation";
 import { requireAdmin } from "@/lib/auth/guards";
 import {
+  notificationWarning,
+  sendOrderNotification,
+} from "@/lib/email/order-notifications";
+import {
   isStandardStatusTransition,
   ORDER_STATUS_LABELS,
 } from "@/lib/orders/status";
 import { POSTER_DELIVERY_KINDS } from "@/lib/orders/delivery";
-import { ORDER_STATUSES, PAYMENT_STATUSES } from "@/lib/types/domain";
+import { ORDER_STATUSES } from "@/lib/types/domain";
 
 export type AdminActionState = {
   status: "idle" | "success" | "error";
@@ -41,7 +45,7 @@ const orderStatusSchema = z.object({
 
 const paymentSchema = z.object({
   orderId: z.uuid(),
-  paymentStatus: z.enum(PAYMENT_STATUSES),
+  paymentStatus: z.enum(["confirmed", "rejected"]),
   paymentNote: z.string().trim().max(1000).optional(),
 });
 
@@ -162,11 +166,22 @@ export async function changePaymentStatus(
 
   if (error) return adminError("change_payment_status_failed", error);
 
+  const notification =
+    parsed.data.paymentStatus === "confirmed"
+      ? await sendOrderNotification(parsed.data.orderId, "payment_confirmed")
+      : null;
+
   revalidatePath(`/admin/orders/${parsed.data.orderId}`);
   revalidatePath("/admin");
   revalidatePath("/admin/orders");
   revalidatePath(`/orders/${parsed.data.orderId}`);
-  return { status: "success", message: "Payment status updated." };
+  return {
+    status: "success",
+    message:
+      parsed.data.paymentStatus === "confirmed"
+        ? `Payment confirmed and production started.${notification ? notificationWarning(notification) : ""}`
+        : "Payment proof rejected.",
+  };
 }
 
 export async function queuePromptGeneration(
@@ -357,13 +372,18 @@ export async function publishPosterDelivery(input: {
     return adminError("poster_delivery_publish_failed", error);
   }
 
+  const notification = await sendOrderNotification(
+    parsed.data.orderId,
+    parsed.data.kind === "review" ? "review_draft_ready" : "final_poster_ready",
+  );
+
   revalidateOrderPaths(parsed.data.orderId);
   return {
     status: "success",
     message:
       parsed.data.kind === "review"
-        ? "Review poster published to the client."
-        : "Final poster published to the client.",
+        ? `Review poster published and the order opened for amendments.${notificationWarning(notification)}`
+        : `Final poster published and the order completed.${notificationWarning(notification)}`,
   };
 }
 
@@ -613,6 +633,19 @@ async function queueGenerationJob({
     created_by: typeof claims.sub === "string" ? claims.sub : null,
   });
   if (error) return adminError("generation_job_insert_failed", error);
+
+  if (order.status === "payment_confirmed") {
+    const { error: statusError } = await supabase.rpc("change_order_status", {
+      target_order_id: orderId,
+      next_status: "design_in_progress",
+      change_note: "Creative production started",
+      client_message: null,
+      force_transition: false,
+    });
+    if (statusError) {
+      return adminError("generation_job_status_update_failed", statusError);
+    }
+  }
 
   revalidateOrderPaths(orderId);
   return {

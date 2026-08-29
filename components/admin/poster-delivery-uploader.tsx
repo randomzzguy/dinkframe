@@ -120,8 +120,8 @@ export function PosterDeliveryUploader({
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-600">
             Review drafts and final posters stay private and appear immediately
-            in this client&apos;s order. Every upload is preserved in the order
-            archive.
+            in this client&apos;s order. Publishing once also updates the order
+            status, timeline, and client email automatically.
           </p>
         </div>
         <span className="rounded-full bg-lime-100 px-3 py-1.5 text-xs font-bold text-lime-950">
@@ -169,8 +169,8 @@ export function PosterDeliveryUploader({
                   }`}
                 >
                   {option === "review"
-                    ? "For client feedback during the amendment period."
-                    : "The approved, full-quality client deliverable."}
+                    ? "Opens amendments and emails the client automatically."
+                    : "Completes the order and emails the final download link."}
                 </span>
               </button>
             ))}

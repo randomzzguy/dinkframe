@@ -14,6 +14,8 @@
 - Confirm an expired or invalid callback returns to login with a friendly state.
 - Confirm sign-out clears the session.
 - Confirm a non-admin is redirected away from `/admin`.
+- Open `/login?next=/orders/{owned-order-id}`, request a magic link, and confirm the callback returns to that order.
+- Replace `next` with an external or protocol-relative URL and confirm the app falls back to `/dashboard`.
 
 ## Client isolation
 
@@ -40,6 +42,7 @@
 - Confirm ordinary clients cannot query `automation_settings` or `generation_jobs`.
 - Search by order number, player, tournament, WhatsApp, and client email.
 - Combine status, package, tournament, player, and date filters; reset them.
+- Confirm payment once and verify payment, production status, history, client event, and email update without a separate status action.
 
 ## ChatGPT production companion
 
@@ -76,9 +79,11 @@
 ## Poster delivery
 
 - Confirm an unpaid order cannot publish a review or final poster.
-- Publish a review poster and confirm the client sees a preview, review label, download action, and client-visible update.
-- Publish a final poster and confirm it is clearly distinguished from review drafts.
+- Publish a review poster once and confirm the client sees a preview, review label, download action, client-visible update, amendment status, and one review email.
+- Publish a final poster once and confirm it is clearly distinguished, the order completes, and one final email arrives.
+- Repeat or double-click a milestone action and confirm the unique delivery receipt prevents a duplicate email.
 - Confirm another client cannot read either poster row or Storage object.
+- Open another client’s order UUID from an email-style login URL and confirm login plus RLS deny access.
 - Export the order and confirm review drafts are in `review-posters/` and approved finals are in `final-posters/`.
 
 ## Browsers

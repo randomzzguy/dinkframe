@@ -4,6 +4,29 @@ export function getAppLoginUrl() {
   return new URL("/login", getPublicEnv().NEXT_PUBLIC_APP_URL).toString();
 }
 
+export function getSafeNextPath(
+  value: string | string[] | null | undefined,
+  fallback = "/dashboard",
+) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  if (
+    !candidate ||
+    !candidate.startsWith("/") ||
+    candidate.startsWith("//") ||
+    candidate.includes("\\")
+  ) {
+    return fallback;
+  }
+
+  try {
+    const parsed = new URL(candidate, "https://app.dinkframe.local");
+    if (parsed.origin !== "https://app.dinkframe.local") return fallback;
+    return `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return fallback;
+  }
+}
+
 export function getCrossDomainLoginRedirect(
   requestUrl: URL,
   appUrl: string | undefined,

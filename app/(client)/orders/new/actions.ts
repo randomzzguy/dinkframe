@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/guards";
+import { sendOrderNotification } from "@/lib/email/order-notifications";
 import type { Json } from "@/lib/types/database";
 import {
   orderSubmissionSchema,
@@ -106,6 +107,7 @@ export async function submitOrder(
   }
 
   revalidatePath("/dashboard");
+  await sendOrderNotification(data.id, "submission_received");
   return { ok: true, orderId: data.id, orderNumber: data.orderNumber };
 }
 

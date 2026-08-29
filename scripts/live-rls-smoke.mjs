@@ -21,6 +21,8 @@ const password = `${randomUUID()}Aa1!`;
 const createdUserIds = [];
 let draftId;
 let uploadedPath;
+let workflowOrderId;
+const workflowPaths = [];
 
 try {
   const firstUser = await createTestUser(
@@ -105,6 +107,31 @@ try {
     "a client could read admin generation jobs",
   );
 
+  const {
+    data: clientNotificationReceipts,
+    error: clientNotificationReceiptsError,
+  } = await secondClient.from("order_notification_deliveries").select("id");
+  assertNoError(
+    clientNotificationReceiptsError,
+    "client notification-receipts query failed unexpectedly",
+  );
+  assert(
+    clientNotificationReceipts.length === 0,
+    "a client could read order notification receipts",
+  );
+
+  const { error: clientNotificationWriteError } = await secondClient
+    .from("order_notification_deliveries")
+    .insert({
+      order_id: randomUUID(),
+      notification_kind: "submission_received",
+      recipient_email: secondUser.email,
+    });
+  assert(
+    clientNotificationWriteError,
+    "a client could insert an order notification receipt",
+  );
+
   const { error: clientClaimError } = await secondClient.rpc(
     "claim_generation_job",
     {
@@ -163,8 +190,141 @@ try {
     "admin could not read generation jobs",
   );
 
+  const { error: adminNotificationReceiptsError } = await firstClient
+    .from("order_notification_deliveries")
+    .select("id")
+    .limit(1);
+  assertNoError(
+    adminNotificationReceiptsError,
+    "admin could not read order notification receipts",
+  );
+
+  const { data: packageRow, error: packageError } = await admin
+    .from("packages")
+    .select("id, name, price_myr, poster_count, free_amendments")
+    .eq("active", true)
+    .order("sort_order")
+    .limit(1)
+    .single();
+  assertNoError(packageError, "could not load a package for workflow smoke");
+
+  const { data: workflowOrder, error: workflowOrderError } = await admin
+    .from("orders")
+    .insert({
+      client_id: secondUser.id,
+      player_name: "RLS Workflow Test",
+      whatsapp: "+60111111111",
+      tournament_name: "Synthetic Workflow Open",
+      tournament_start_date: "2026-09-15",
+      tournament_end_date: "2026-09-16",
+      tournament_location: "Kuala Lumpur",
+      package_id: packageRow.id,
+      package_name_snapshot: packageRow.name,
+      package_price_snapshot: packageRow.price_myr,
+      poster_count_snapshot: packageRow.poster_count,
+      free_amendments_total: packageRow.free_amendments,
+      color_preference: "blue",
+      theme_preference: "japanese-inspired",
+      payment_status: "proof_uploaded",
+      status: "request_received",
+    })
+    .select("id")
+    .single();
+  assertNoError(workflowOrderError, "could not create workflow smoke order");
+  workflowOrderId = workflowOrder.id;
+
+  const { data: paidOrder, error: paymentError } = await firstClient.rpc(
+    "change_payment_status",
+    {
+      target_order_id: workflowOrderId,
+      next_payment_status: "confirmed",
+      payment_note: "RLS workflow smoke",
+    },
+  );
+  assertNoError(paymentError, "payment confirmation workflow failed");
+  assert(
+    paidOrder.payment_status === "confirmed" &&
+      paidOrder.status === "design_in_progress",
+    "payment confirmation did not start production",
+  );
+
+  const { error: clientFinishingError } = await secondClient.rpc(
+    "mark_order_finishing_after_image_approval",
+    { target_order_id: workflowOrderId },
+  );
+  assert(
+    clientFinishingError,
+    "a client could invoke the automation-only finishing transition",
+  );
+  const { data: finishingOrder, error: finishingError } = await admin.rpc(
+    "mark_order_finishing_after_image_approval",
+    { target_order_id: workflowOrderId },
+  );
+  assertNoError(finishingError, "automation finishing transition failed");
+  assert(
+    finishingOrder.status === "finishing_touches",
+    "image approval did not enter finishing touches",
+  );
+
+  const deliveryBytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+  const reviewPath = `orders/${workflowOrderId}/deliveries/review/${randomUUID()}.png`;
+  workflowPaths.push(reviewPath);
+  const { error: reviewUploadError } = await admin.storage
+    .from("order-assets")
+    .upload(reviewPath, deliveryBytes, { contentType: "image/png" });
+  assertNoError(reviewUploadError, "review smoke upload failed");
+  const { error: reviewPublishError } = await firstClient.rpc(
+    "publish_poster_delivery",
+    {
+      target_order_id: workflowOrderId,
+      target_storage_path: reviewPath,
+      target_original_filename: "review.png",
+      target_mime_type: "image/png",
+      target_file_size: deliveryBytes.byteLength,
+      target_is_review: true,
+      client_message: "Review smoke",
+    },
+  );
+  assertNoError(reviewPublishError, "review publication workflow failed");
+
+  const finalPath = `orders/${workflowOrderId}/deliveries/final/${randomUUID()}.png`;
+  workflowPaths.push(finalPath);
+  const { error: finalUploadError } = await admin.storage
+    .from("order-assets")
+    .upload(finalPath, deliveryBytes, { contentType: "image/png" });
+  assertNoError(finalUploadError, "final smoke upload failed");
+  const { error: finalPublishError } = await firstClient.rpc(
+    "publish_poster_delivery",
+    {
+      target_order_id: workflowOrderId,
+      target_storage_path: finalPath,
+      target_original_filename: "final.png",
+      target_mime_type: "image/png",
+      target_file_size: deliveryBytes.byteLength,
+      target_is_review: false,
+      client_message: "Final smoke",
+    },
+  );
+  assertNoError(finalPublishError, "final publication workflow failed");
+  const { data: completedOrder, error: completedOrderError } = await admin
+    .from("orders")
+    .select("status, completed_at")
+    .eq("id", workflowOrderId)
+    .single();
+  assertNoError(completedOrderError, "completed workflow order lookup failed");
+  assert(
+    completedOrder.status === "completed" && completedOrder.completed_at,
+    "final publication did not complete the order",
+  );
+
   console.log("Live RLS smoke test passed.");
 } finally {
+  if (workflowPaths.length) {
+    await admin.storage.from("order-assets").remove(workflowPaths);
+  }
+  if (workflowOrderId) {
+    await admin.from("orders").delete().eq("id", workflowOrderId);
+  }
   if (uploadedPath) {
     await admin.storage.from("order-assets").remove([uploadedPath]);
   }

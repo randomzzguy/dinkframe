@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/auth/login-form";
+import { isAdminEmail } from "@/lib/auth/guards";
+import { getSafeNextPath } from "@/lib/auth/urls";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -8,11 +12,22 @@ export const metadata: Metadata = {
 };
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string | string[] }>;
+  searchParams: Promise<{
+    error?: string | string[];
+    next?: string | string[];
+  }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const errorValue = (await searchParams).error;
+  const query = await searchParams;
+  const errorValue = query.error;
+  const nextPath = getSafeNextPath(query.next);
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+
+  if (data?.claims?.sub) {
+    redirect(isAdminEmail(data.claims.email) ? "/admin" : nextPath);
+  }
   const hasCallbackError = Array.isArray(errorValue)
     ? errorValue.includes("callback")
     : errorValue === "callback";
@@ -35,7 +50,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           and open it in the same browser.
         </div>
       ) : null}
-      <LoginForm />
+      <LoginForm nextPath={nextPath} />
     </div>
   );
 }

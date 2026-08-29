@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { getMagicLinkErrorMessage } from "@/lib/auth/magic-link-error";
+import { getSafeNextPath } from "@/lib/auth/urls";
 import { getPublicEnv } from "@/lib/config/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,13 +15,17 @@ export type LoginState = {
 
 const loginSchema = z.object({
   email: z.email("Enter a valid email address."),
+  next: z.string().max(1000).optional(),
 });
 
 export async function sendMagicLink(
   _previousState: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
-  const result = loginSchema.safeParse({ email: formData.get("email") });
+  const result = loginSchema.safeParse({
+    email: formData.get("email"),
+    next: formData.get("next") || undefined,
+  });
 
   if (!result.success) {
     return {
@@ -31,10 +36,12 @@ export async function sendMagicLink(
 
   const supabase = await createClient();
   const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL;
+  const callbackUrl = new URL("/auth/callback", appUrl);
+  callbackUrl.searchParams.set("next", getSafeNextPath(result.data.next));
   const { error } = await supabase.auth.signInWithOtp({
     email: result.data.email,
     options: {
-      emailRedirectTo: `${appUrl}/auth/callback?next=/dashboard`,
+      emailRedirectTo: callbackUrl.toString(),
       shouldCreateUser: true,
     },
   });

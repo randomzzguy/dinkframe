@@ -25,7 +25,7 @@ Wizard validation → reserve an RLS-owned `order_drafts` ID → upload original
 
 ### Advance production
 
-Admin server action → `ADMIN_EMAIL` guard → RLS admin role → transition validation → update order → database trigger appends status history → optional client-visible event.
+Admin performs the meaningful business action → `ADMIN_EMAIL` guard → RLS admin role → one database transaction updates the action result, status, status history, and client event. Payment confirmation starts production; image approval enters finishing; review publication opens amendments; final publication completes the order. The status is an outcome, not a second admin task.
 
 ### Run Hermes creative production
 
@@ -33,7 +33,11 @@ Admin starts a paid order workflow → server reloads and snapshots the authorit
 
 ### Publish a poster to a client
 
-Admin browser uploads an image directly to the private `order-assets` bucket under an exact order-scoped `deliveries/review` or `deliveries/final` path → admin server action validates the untrusted upload description and rechecks the admin identity → database RPC locks and verifies the paid active order, exact Storage object, MIME type, and size → `order_assets` records the poster as temporary review or permanent final → a client-visible order event is created atomically → the client receives only a five-minute signed view/download URL.
+Admin browser uploads an image directly to the private `order-assets` bucket under an exact order-scoped `deliveries/review` or `deliveries/final` path → admin server action validates the untrusted upload description and rechecks the admin identity → database RPC locks and verifies the paid active order, exact Storage object, MIME type, and size → `order_assets` records the poster as temporary review or permanent final → the same transaction advances the order and creates a client-visible event → the server sends one idempotent lifecycle email → the authenticated owner receives only a five-minute signed view/download URL.
+
+### Email an order milestone
+
+Authenticated client/admin action completes first → narrow server-only service-role helper reloads the authoritative order and profile → unique `order_notification_deliveries(order_id, notification_kind)` receipt claims the milestone → Resend API sends branded HTML/text with a deterministic idempotency key → receipt records success or failure. The CTA points to an allowlisted same-origin post-login path. Login verifies identity; the order query and private Storage URLs still require ownership RLS.
 
 ### Delete an archive
 
@@ -58,3 +62,4 @@ Admin export route streams metadata and private assets into a ZIP → export RPC
 - Payment instructions and QR path: singleton `payment_settings` row managed by the owner.
 - Legacy Playwright submission mode: singleton `automation_settings` row, readable and writable only by the admin. The Hermes workflow always requires Telegram decisions regardless of this fallback preference.
 - Automation jobs: admin-only `generation_jobs` rows own input/asset snapshots, generated prompt or owner-local image path, revision feedback, and hashed one-time approval state. The local runner receives short-lived downloads through a bearer-token API; it never receives the Supabase service-role key.
+- Notification receipts: service-role writes only; authenticated admin read-only. A URL or email address never substitutes for an authenticated owner query.

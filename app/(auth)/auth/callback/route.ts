@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isAdminEmail } from "@/lib/auth/guards";
 import { needsOnboarding } from "@/lib/auth/onboarding";
+import { getSafeNextPath } from "@/lib/auth/urls";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -9,8 +10,7 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
   const flowId = requestUrl.searchParams.get("sb_flow_id");
   const next = requestUrl.searchParams.get("next");
-  const safeNext =
-    next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+  const safeNext = getSafeNextPath(next);
 
   if (code) {
     const supabase = await createClient();

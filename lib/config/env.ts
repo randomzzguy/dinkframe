@@ -11,6 +11,8 @@ const serverEnvSchema = publicEnvSchema.extend({
   ADMIN_EMAIL: z.email(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
   DINKFRAME_AUTOMATION_RUNNER_TOKEN: z.string().min(32).optional(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  RESEND_FROM_EMAIL: z.string().min(3).optional(),
 });
 
 export function getPublicEnv() {
@@ -34,5 +36,7 @@ export function getServerEnv() {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     DINKFRAME_AUTOMATION_RUNNER_TOKEN:
       process.env.DINKFRAME_AUTOMATION_RUNNER_TOKEN,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
   });
 }

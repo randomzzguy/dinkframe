@@ -1,9 +1,9 @@
 "use client";
 
+import { CheckCircle2, RotateCcw, ShieldCheck } from "lucide-react";
 import { useActionState } from "react";
 
 import {
-  changeOrderStatus,
   changePaymentStatus,
   type AdminActionState,
 } from "@/app/admin/orders/[id]/actions";
@@ -11,12 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ORDER_STATUS_LABELS } from "@/lib/orders/status";
-import {
-  ORDER_STATUSES,
-  PAYMENT_STATUSES,
-  type OrderStatus,
-  type PaymentStatus,
-} from "@/lib/types/domain";
+import type { OrderStatus, PaymentStatus } from "@/lib/types/domain";
 
 const initialState: AdminActionState = { status: "idle", message: "" };
 
@@ -29,105 +24,79 @@ export function OrderControls({
   currentStatus: OrderStatus;
   currentPaymentStatus: PaymentStatus;
 }) {
-  const [statusState, statusAction, statusPending] = useActionState(
-    changeOrderStatus,
-    initialState,
-  );
   const [paymentState, paymentAction, paymentPending] = useActionState(
     changePaymentStatus,
     initialState,
   );
+  const paymentConfirmed = currentPaymentStatus === "confirmed";
 
   return (
-    <div className="grid gap-5 xl:grid-cols-2">
-      <form
-        action={paymentAction}
-        className="space-y-4 rounded-2xl border border-black/10 bg-white p-6"
-      >
-        <input type="hidden" name="orderId" value={orderId} />
-        <h2 className="font-bold">Payment review</h2>
-        <div className="space-y-2">
-          <Label htmlFor="paymentStatus">Payment status</Label>
-          <select
-            id="paymentStatus"
-            name="paymentStatus"
-            defaultValue={currentPaymentStatus}
-            className="border-input h-10 w-full rounded-lg border bg-white px-3 text-sm"
-          >
-            {PAYMENT_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {titleCase(status)}
-              </option>
-            ))}
-          </select>
+    <section className="rounded-2xl border border-black/10 bg-white p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="eyebrow">Production control</p>
+          <h2 className="mt-2 text-xl font-bold">One action, one workflow</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-600">
+            Confirm payment once. Publishing a review or final poster will move
+            the order, timeline, client update, and email automatically.
+          </p>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="paymentNote">Payment note</Label>
-          <Textarea
-            id="paymentNote"
-            name="paymentNote"
-            rows={3}
-            maxLength={1000}
-          />
-        </div>
-        <Button type="submit" disabled={paymentPending}>
-          {paymentPending ? "Updating…" : "Update payment"}
-        </Button>
-        <ActionMessage state={paymentState} />
-      </form>
+        <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700">
+          {ORDER_STATUS_LABELS[currentStatus]}
+        </span>
+      </div>
 
-      <form
-        action={statusAction}
-        className="space-y-4 rounded-2xl border border-black/10 bg-white p-6"
-      >
-        <input type="hidden" name="orderId" value={orderId} />
-        <input type="hidden" name="currentStatus" value={currentStatus} />
-        <h2 className="font-bold">Production status</h2>
-        <div className="space-y-2">
-          <Label htmlFor="nextStatus">Move order to</Label>
-          <select
-            id="nextStatus"
-            name="nextStatus"
-            defaultValue={currentStatus}
-            className="border-input h-10 w-full rounded-lg border bg-white px-3 text-sm"
-          >
-            {ORDER_STATUSES.filter((status) => status !== "archived").map(
-              (status) => (
-                <option key={status} value={status}>
-                  {ORDER_STATUS_LABELS[status]}
-                </option>
-              ),
-            )}
-          </select>
+      {paymentConfirmed ? (
+        <div className="mt-6 flex items-start gap-3 rounded-2xl bg-lime-50 p-5 text-lime-950">
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0" />
+          <div>
+            <p className="font-bold">Payment confirmed</p>
+            <p className="mt-1 text-sm leading-6">
+              Production is active. The client has received the payment update,
+              and the next meaningful action is to start Hermes or publish a
+              poster.
+            </p>
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="note">Internal status note</Label>
-          <Textarea id="note" name="note" rows={2} maxLength={1000} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="clientMessage">Client-visible update</Label>
-          <Textarea
-            id="clientMessage"
-            name="clientMessage"
-            rows={3}
-            maxLength={1000}
-            placeholder="Your poster is now in the finishing touches stage."
-          />
-        </div>
-        <label className="flex items-start gap-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
-          <input
-            type="checkbox"
-            name="confirmUnusual"
-            className="mt-0.5 accent-black"
-          />
-          I confirm this if it is an unusual or corrective transition.
-        </label>
-        <Button type="submit" disabled={statusPending}>
-          {statusPending ? "Updating…" : "Update status"}
-        </Button>
-        <ActionMessage state={statusState} />
-      </form>
-    </div>
+      ) : (
+        <form action={paymentAction} className="mt-6 space-y-4">
+          <input type="hidden" name="orderId" value={orderId} />
+          <div className="space-y-2">
+            <Label htmlFor="paymentNote">Payment note (optional)</Label>
+            <Textarea
+              id="paymentNote"
+              name="paymentNote"
+              rows={2}
+              maxLength={1000}
+              placeholder="Add a private note if the receipt needs context."
+            />
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="submit"
+              name="paymentStatus"
+              value="confirmed"
+              disabled={paymentPending}
+            >
+              <ShieldCheck />
+              {paymentPending
+                ? "Applying…"
+                : "Confirm payment & start production"}
+            </Button>
+            <Button
+              type="submit"
+              name="paymentStatus"
+              value="rejected"
+              variant="outline"
+              disabled={paymentPending}
+            >
+              <RotateCcw /> Reject proof
+            </Button>
+          </div>
+          <ActionMessage state={paymentState} />
+        </form>
+      )}
+    </section>
   );
 }
 
@@ -141,10 +110,4 @@ function ActionMessage({ state }: { state: AdminActionState }) {
       {state.message}
     </p>
   );
-}
-
-function titleCase(value: string) {
-  return value
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
 }

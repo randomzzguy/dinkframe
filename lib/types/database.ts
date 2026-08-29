@@ -404,6 +404,38 @@ export type Database = {
         >;
         Relationships: [];
       };
+      order_notification_deliveries: {
+        Row: {
+          id: string;
+          order_id: string;
+          notification_kind: Database["public"]["Enums"]["order_notification_kind"];
+          recipient_email: string;
+          status: Database["public"]["Enums"]["order_notification_status"];
+          attempts: number;
+          provider_message_id: string | null;
+          last_error: string | null;
+          sent_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          notification_kind: Database["public"]["Enums"]["order_notification_kind"];
+          recipient_email: string;
+          status?: Database["public"]["Enums"]["order_notification_status"];
+          attempts?: number;
+          provider_message_id?: string | null;
+          last_error?: string | null;
+          sent_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["order_notification_deliveries"]["Insert"]
+        >;
+        Relationships: [];
+      };
       amendments: {
         Row: {
           id: string;
@@ -550,6 +582,10 @@ export type Database = {
         };
         Returns: Database["public"]["Tables"]["generation_jobs"]["Row"];
       };
+      mark_order_finishing_after_image_approval: {
+        Args: { target_order_id: string };
+        Returns: Database["public"]["Tables"]["orders"]["Row"];
+      };
     };
     Enums: {
       amendment_billing_kind: "free" | "paid_required" | "paid_confirmed";
@@ -582,6 +618,12 @@ export type Database = {
         | "submitted"
         | "failed"
         | "cancelled";
+      order_notification_kind:
+        | "submission_received"
+        | "payment_confirmed"
+        | "review_draft_ready"
+        | "final_poster_ready";
+      order_notification_status: "sending" | "sent" | "failed";
     };
     CompositeTypes: Record<never, never>;
   };

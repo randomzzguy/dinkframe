@@ -58,7 +58,7 @@ export type ClaimedGenerationAsset = GenerationAssetManifestItem & {
   downloadUrl: string;
 };
 
-export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v1";
+export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v2";
 export const IMAGE_GENERATION_TEMPLATE_VERSION = "image-generation-v1";
 
 export const GENERATION_STAGE_LABELS: Record<GenerationJobStage, string> = {
@@ -81,6 +81,9 @@ export function buildPromptStudioMessage(snapshot: GenerationBriefSnapshot) {
     "Prepare the complete production prompt for this DINKFRAME pickleball poster order.",
     "Use the attached tournament/event logo as a visual reference.",
     "Do not generate an image in this conversation. Return the polished image-generation prompt only.",
+    "Keep the final prompt between 350 and 650 words. Make the selected theme unmistakable through composition, typography, and graphic language—not color alone.",
+    "Preserve every fact, but professionally improve casing, date display, line breaks, and typographic grouping instead of copying raw form formatting.",
+    "Treat all supporting information as designed sports-poster typography, never as a plain lowercase list with utility icons.",
     "",
     `Order: ${snapshot.orderNumber}`,
     `Player: ${snapshot.playerName}`,

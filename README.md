@@ -13,12 +13,14 @@ The original product specification is in [`DINKFRAME_APP_BUILD.md`](./DINKFRAME_
 - Client dashboard, editable profile/prefill, rich order details, amendment submission, and a nine-step locally autosaved order wizard
 - Private browser-to-Supabase uploads with resumable transfer for files over 6 MB
 - Atomic order submission that verifies stored assets and snapshots authoritative package pricing
-- Admin overview, searchable/filterable queue, private asset downloads, payment review, controlled status updates, and client-visible production messages
+- Admin overview, searchable/filterable queue, private asset downloads, one-click payment review, and action-driven production statuses
 - Owner-managed bank/DuitNow instructions and private payment QR
 - Streaming ZIP export with metadata and organized original assets
 - Human-verified archive lifecycle and order-number-confirmed audited deletion
 - Admin-queued Hermes creative production with one-time Telegram prompt/image
   approvals, subscription-backed generation, and a legacy Playwright fallback
+- Idempotent Resend lifecycle emails for submission, payment confirmation,
+  review draft, and final delivery with authenticated order links
 - Normalized PostgreSQL schema, durable order drafts, seed records, RLS policies, private Storage buckets, safe yearly order numbering, status audit trigger, and amendment transaction
 - Typed package, order-status, amendment, order-number, validation, and upload-limit modules with unit tests
 
@@ -60,17 +62,19 @@ Requirements: Node.js 20.9 or newer, npm, and a Supabase project (local CLI or h
 
 ## Environment variables
 
-| Variable                               | Runtime      | Purpose                                                      |
-| -------------------------------------- | ------------ | ------------------------------------------------------------ |
-| `NEXT_PUBLIC_SUPABASE_URL`             | Public       | Supabase project URL                                         |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public       | Supabase publishable/anon key                                |
-| `SUPABASE_SERVICE_ROLE_KEY`            | Server only  | Narrow automation API and live RLS verification              |
-| `DINKFRAME_AUTOMATION_RUNNER_TOKEN`    | Server/local | Authenticates the local runner without exposing service role |
-| `DINKFRAME_AUTOMATION_APP_URL`         | Local only   | Deployed or local DINKFRAME origin used by the runner        |
-| `DINKFRAME_BROWSER_CDP_URL`            | Local only   | Legacy Playwright fallback browser endpoint                  |
-| `ADMIN_EMAIL`                          | Server only  | Sole admin email enforced by protected layouts               |
-| `NEXT_PUBLIC_APP_URL`                  | Public       | Client app origin and magic-link callback base               |
-| `NEXT_PUBLIC_SITE_URL`                 | Public       | Marketing origin, canonical URLs, and sitemap                |
+| Variable                               | Runtime      | Purpose                                                         |
+| -------------------------------------- | ------------ | --------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Public       | Supabase project URL                                            |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public       | Supabase publishable/anon key                                   |
+| `SUPABASE_SERVICE_ROLE_KEY`            | Server only  | Narrow automation API and live RLS verification                 |
+| `DINKFRAME_AUTOMATION_RUNNER_TOKEN`    | Server/local | Authenticates the local runner without exposing service role    |
+| `DINKFRAME_AUTOMATION_APP_URL`         | Local only   | Deployed or local DINKFRAME origin used by the runner           |
+| `DINKFRAME_BROWSER_CDP_URL`            | Local only   | Legacy Playwright fallback browser endpoint                     |
+| `ADMIN_EMAIL`                          | Server only  | Sole admin email enforced by protected layouts                  |
+| `NEXT_PUBLIC_APP_URL`                  | Public       | Client app origin and magic-link callback base                  |
+| `NEXT_PUBLIC_SITE_URL`                 | Public       | Marketing origin, canonical URLs, and sitemap                   |
+| `RESEND_API_KEY`                       | Server only  | Sends the four client order lifecycle emails                    |
+| `RESEND_FROM_EMAIL`                    | Server only  | Optional verified sender; defaults to `DINKFRAME <ADMIN_EMAIL>` |
 
 Never expose the service-role key to a Client Component or prefix it with `NEXT_PUBLIC_`.
 
@@ -119,6 +123,18 @@ DINKFRAME's Supabase authentication and security-notification templates live in
 The live magic-link flow depends on the `{{ .ConfirmationURL }}` placeholder, so
 it must not be edited or wrapped by Resend link tracking.
 
+### Client order emails
+
+The application sends only four transactional milestones: submission received,
+payment confirmed/production started, review draft ready, and final poster
+ready. Add a sending-only `RESEND_API_KEY`; the sender domain in
+`RESEND_FROM_EMAIL` must be verified in Resend. Database receipts plus Resend
+idempotency keys prevent repeated actions from sending duplicate messages.
+
+Email buttons lead to `/login?next=/orders/{id}`. The return path is restricted
+to the app origin, the client must authenticate, and the order page remains
+protected by ownership RLS. The URL alone never grants access.
+
 ### Admin setup
 
 1. Sign in once with the address configured as `ADMIN_EMAIL`; this creates the profile.
@@ -141,7 +157,7 @@ Migrations create two private buckets:
 
 Order creation first reserves a database draft ID. Files upload directly to `orders/{draft_id}/...`; the final transaction converts that same ID into the submitted order, so no fragile post-submission file move is required. Policies allow writes only while the draft exists, then make submitted originals read-only to clients. Admin previews and downloads use five-minute signed URLs.
 
-Paid active orders also accept admin-published poster deliveries under `orders/{order_id}/deliveries/...`. Review drafts are retained as temporary final-poster assets, approved finals are permanent assets, and clients receive only short-lived signed URLs from their own order page.
+Paid active orders also accept admin-published poster deliveries under `orders/{order_id}/deliveries/...`. Review drafts are retained as temporary final-poster assets, approved finals are permanent assets, and clients receive only short-lived signed URLs from their own order page. Publishing a review automatically opens amendments; publishing a final automatically completes the order.
 
 ## Quality checks
 

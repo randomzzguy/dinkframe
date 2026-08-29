@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 
 const initialState: LoginState = { message: "", status: "idle" };
 
-export function LoginForm() {
+export function LoginForm({ nextPath = "/dashboard" }: { nextPath?: string }) {
   const [state, formAction, pending] = useActionState(
     sendMagicLink,
     initialState,
@@ -17,6 +17,7 @@ export function LoginForm() {
 
   return (
     <form action={formAction} className="mt-8 space-y-5">
+      <input type="hidden" name="next" value={nextPath} />
       <div className="space-y-2">
         <Label htmlFor="email">Email address</Label>
         <Input

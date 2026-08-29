@@ -313,6 +313,20 @@ export default async function AdminOrderPage({
       </div>
 
       <div className="mt-5">
+        <OrderControls
+          orderId={order.id}
+          currentStatus={order.status}
+          currentPaymentStatus={order.payment_status}
+        />
+      </div>
+      <div className="mt-5">
+        <GenerationControls
+          orderId={order.id}
+          paymentConfirmed={order.payment_status === "confirmed"}
+          jobs={generationJobResult.data ?? []}
+        />
+      </div>
+      <div className="mt-5">
         <PosterDeliveryUploader
           orderId={order.id}
           orderStatus={order.status}
@@ -324,21 +338,6 @@ export default async function AdminOrderPage({
             createdAt: asset.created_at,
             signedUrl: asset.signedUrl,
           }))}
-        />
-      </div>
-
-      <div className="mt-5">
-        <GenerationControls
-          orderId={order.id}
-          paymentConfirmed={order.payment_status === "confirmed"}
-          jobs={generationJobResult.data ?? []}
-        />
-      </div>
-      <div className="mt-5">
-        <OrderControls
-          orderId={order.id}
-          currentStatus={order.status}
-          currentPaymentStatus={order.payment_status}
         />
       </div>
       <div className="mt-5">

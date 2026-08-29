@@ -116,6 +116,13 @@ export async function POST(
 
   const finishError = await finishReviewedJob(supabase, job.id, "submitted");
   if (finishError) return serverError(finishError);
+  if (job.stage === "image_generation") {
+    const { error: statusError } = await supabase.rpc(
+      "mark_order_finishing_after_image_approval",
+      { target_order_id: job.order_id },
+    );
+    if (statusError) return serverError(statusError);
+  }
   return Response.json({
     message:
       job.stage === "prompt_generation"

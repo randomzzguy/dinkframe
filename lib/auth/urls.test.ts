@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getCrossDomainLoginRedirect } from "./urls";
+import { getCrossDomainLoginRedirect, getSafeNextPath } from "./urls";
 
 const appUrl = "https://app.dinkframe.my";
 const siteUrl = "https://dinkframe.my";
@@ -36,5 +36,21 @@ describe("cross-domain login redirects", () => {
     );
 
     expect(redirect).toBeNull();
+  });
+});
+
+describe("safe post-login destinations", () => {
+  it("keeps an internal order path and query string", () => {
+    expect(getSafeNextPath("/orders/abc?from=email")).toBe(
+      "/orders/abc?from=email",
+    );
+  });
+
+  it.each([
+    "https://attacker.example/orders/abc",
+    "//attacker.example/orders/abc",
+    "/\\attacker.example/orders/abc",
+  ])("rejects an external redirect attempt: %s", (value) => {
+    expect(getSafeNextPath(value)).toBe("/dashboard");
   });
 });

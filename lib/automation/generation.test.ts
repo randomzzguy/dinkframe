@@ -48,6 +48,9 @@ describe("generation automation", () => {
     expect(message).toContain("Mixed doubles with Kai");
     expect(message).toContain("electric blue");
     expect(message).toContain("Acme");
+    expect(message).toContain("350 and 650 words");
+    expect(message).toContain("not color alone");
+    expect(message).toContain("plain lowercase list");
   });
 
   it("only sends the tournament logo to Prompt Studio", () => {
