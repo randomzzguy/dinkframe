@@ -1,0 +1,4 @@
+interface:
+  display_name: "DINKFRAME Creative Director"
+  short_description: "Professional pickleball poster art direction"
+  default_prompt: "Use $dinkframe-creative-director to turn this order brief into a production-ready poster prompt."
