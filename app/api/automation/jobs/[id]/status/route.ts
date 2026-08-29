@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createHash } from "node:crypto";
 
 import { isAutomationRunnerAuthorized } from "@/lib/automation/runner-auth";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
@@ -9,6 +10,9 @@ const statusSchema = z.object({
   runnerId: z.string().trim().min(3).max(120),
   status: z.enum(["preparing", "awaiting_review", "submitted", "failed"]),
   error: z.string().trim().max(2000).optional(),
+  outputText: z.string().trim().min(100).max(50000).optional(),
+  outputLocalPath: z.string().trim().min(1).max(1200).optional(),
+  approvalToken: z.string().trim().min(32).max(200).optional(),
 });
 
 export async function POST(
@@ -27,15 +31,34 @@ export async function POST(
   }
 
   const supabase = createServiceRoleClient();
-  const { data, error } = await supabase.rpc(
-    "update_generation_job_from_runner",
-    {
-      target_job_id: parsedId.data,
-      target_runner_id: parsed.data.runnerId,
-      next_status: parsed.data.status,
-      job_error: parsed.data.error,
-    },
-  );
+  const reviewPayloadComplete =
+    parsed.data.status !== "awaiting_review" ||
+    (parsed.data.approvalToken &&
+      (parsed.data.outputText || parsed.data.outputLocalPath));
+  if (!reviewPayloadComplete) {
+    return Response.json(
+      { error: "Review output and approval token are required" },
+      { status: 400 },
+    );
+  }
+
+  const { data, error } =
+    parsed.data.status === "awaiting_review"
+      ? await supabase.rpc("complete_generation_job_for_review", {
+          target_job_id: parsedId.data,
+          target_runner_id: parsed.data.runnerId,
+          generated_output_text: parsed.data.outputText ?? null,
+          generated_output_local_path: parsed.data.outputLocalPath ?? null,
+          generated_approval_token_hash: createHash("sha256")
+            .update(parsed.data.approvalToken ?? "")
+            .digest("hex"),
+        })
+      : await supabase.rpc("update_generation_job_from_runner", {
+          target_job_id: parsedId.data,
+          target_runner_id: parsed.data.runnerId,
+          next_status: parsed.data.status,
+          job_error: parsed.data.error,
+        });
   if (error) {
     console.error("generation_job_runner_update_failed", error);
     return Response.json(

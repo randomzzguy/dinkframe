@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 import { OrderControls } from "@/components/admin/order-controls";
 import { ArchiveControls } from "@/components/admin/archive-controls";
 import { GenerationControls } from "@/components/admin/generation-controls";
+import { PosterDeliveryUploader } from "@/components/admin/poster-delivery-uploader";
 import { Badge } from "@/components/ui/badge";
 import { requireAdmin } from "@/lib/auth/guards";
+import { posterDeliveryLabel } from "@/lib/orders/delivery";
 import { ORDER_STATUS_LABELS } from "@/lib/orders/status";
 
 export default async function AdminOrderPage({
@@ -81,6 +83,9 @@ export default async function AdminOrderPage({
   const paymentProof = signedAssets.find(
     (asset) => asset.asset_type === "payment_proof",
   );
+  const posterDeliveries = signedAssets
+    .filter((asset) => asset.asset_type === "final_poster")
+    .sort((left, right) => right.created_at.localeCompare(left.created_at));
   const profile = profileResult.data;
   const freeRemaining = Math.max(
     0,
@@ -208,7 +213,9 @@ export default async function AdminOrderPage({
                         </span>
                       </td>
                       <td className="py-3 capitalize">
-                        {asset.asset_type.replaceAll("_", " ")}
+                        {asset.asset_type === "final_poster"
+                          ? posterDeliveryLabel(asset.is_temporary)
+                          : asset.asset_type.replaceAll("_", " ")}
                       </td>
                       <td className="py-3">{formatBytes(asset.file_size)}</td>
                       <td className="py-3 text-right">
@@ -303,6 +310,21 @@ export default async function AdminOrderPage({
             </ol>
           </section>
         </div>
+      </div>
+
+      <div className="mt-5">
+        <PosterDeliveryUploader
+          orderId={order.id}
+          orderStatus={order.status}
+          paymentConfirmed={order.payment_status === "confirmed"}
+          deliveries={posterDeliveries.map((asset) => ({
+            id: asset.id,
+            originalFilename: asset.original_filename,
+            isTemporary: asset.is_temporary,
+            createdAt: asset.created_at,
+            signedUrl: asset.signedUrl,
+          }))}
+        />
       </div>
 
       <div className="mt-5">

@@ -17,8 +17,8 @@ The original product specification is in [`DINKFRAME_APP_BUILD.md`](./DINKFRAME_
 - Owner-managed bank/DuitNow instructions and private payment QR
 - Streaming ZIP export with metadata and organized original assets
 - Human-verified archive lifecycle and order-number-confirmed audited deletion
-- Admin-queued Prompt Studio and image-generation jobs with a supervised local
-  Playwright companion and Hermes-friendly quiet runner
+- Admin-queued Hermes creative production with one-time Telegram prompt/image
+  approvals, subscription-backed generation, and a legacy Playwright fallback
 - Normalized PostgreSQL schema, durable order drafts, seed records, RLS policies, private Storage buckets, safe yearly order numbering, status audit trigger, and amendment transaction
 - Typed package, order-status, amendment, order-number, validation, and upload-limit modules with unit tests
 
@@ -60,26 +60,28 @@ Requirements: Node.js 20.9 or newer, npm, and a Supabase project (local CLI or h
 
 ## Environment variables
 
-| Variable                               | Runtime      | Purpose                                                         |
-| -------------------------------------- | ------------ | --------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`             | Public       | Supabase project URL                                            |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public       | Supabase publishable/anon key                                   |
-| `SUPABASE_SERVICE_ROLE_KEY`            | Server only  | Narrow automation API and live RLS verification                 |
-| `DINKFRAME_AUTOMATION_RUNNER_TOKEN`    | Server/local | Authenticates the local companion without exposing service role |
-| `DINKFRAME_AUTOMATION_APP_URL`         | Local only   | Deployed or local DINKFRAME origin used by the companion        |
-| `DINKFRAME_BROWSER_CDP_URL`            | Local only   | Localhost CDP endpoint for the dedicated ChatGPT browser        |
-| `ADMIN_EMAIL`                          | Server only  | Sole admin email enforced by protected layouts                  |
-| `NEXT_PUBLIC_APP_URL`                  | Public       | Client app origin and magic-link callback base                  |
-| `NEXT_PUBLIC_SITE_URL`                 | Public       | Marketing origin, canonical URLs, and sitemap                   |
+| Variable                               | Runtime      | Purpose                                                      |
+| -------------------------------------- | ------------ | ------------------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Public       | Supabase project URL                                         |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public       | Supabase publishable/anon key                                |
+| `SUPABASE_SERVICE_ROLE_KEY`            | Server only  | Narrow automation API and live RLS verification              |
+| `DINKFRAME_AUTOMATION_RUNNER_TOKEN`    | Server/local | Authenticates the local runner without exposing service role |
+| `DINKFRAME_AUTOMATION_APP_URL`         | Local only   | Deployed or local DINKFRAME origin used by the runner        |
+| `DINKFRAME_BROWSER_CDP_URL`            | Local only   | Legacy Playwright fallback browser endpoint                  |
+| `ADMIN_EMAIL`                          | Server only  | Sole admin email enforced by protected layouts               |
+| `NEXT_PUBLIC_APP_URL`                  | Public       | Client app origin and magic-link callback base               |
+| `NEXT_PUBLIC_SITE_URL`                 | Public       | Marketing origin, canonical URLs, and sitemap                |
 
 Never expose the service-role key to a Client Component or prefix it with `NEXT_PUBLIC_`.
 
 ## Studio automation
 
-The owner can queue Prompt Studio and image-generation jobs from each admin order
-page after payment is confirmed. The local companion snapshots the active
-review/auto-send setting, so later settings changes do not affect a job already
-in progress. Setup and Hermes scheduling are documented in
+After payment is confirmed, the owner starts one Hermes workflow from the admin
+order. The local runner creates a professional prompt, sends it to private
+Telegram with a one-time approval token, generates exactly one image only after
+approval, and returns that image to Telegram for a second decision. It is pinned
+to the subscription-backed `openai-codex` provider with no paid fallback. Setup,
+commands, and failure recovery are documented in
 [`docs/HERMES_AUTOMATION.md`](./docs/HERMES_AUTOMATION.md).
 
 ## Supabase setup
@@ -132,10 +134,12 @@ The server guard checks `ADMIN_EMAIL`, while RLS checks the admin profile role. 
 
 Migrations create two private buckets:
 
-- `order-assets`: player images, tournament logos, sponsor logos, final posters
+- `order-assets`: player images, tournament logos, sponsor logos, private review drafts, and final posters
 - `payment-proofs`: payment images and PDFs
 
 Order creation first reserves a database draft ID. Files upload directly to `orders/{draft_id}/...`; the final transaction converts that same ID into the submitted order, so no fragile post-submission file move is required. Policies allow writes only while the draft exists, then make submitted originals read-only to clients. Admin previews and downloads use five-minute signed URLs.
+
+Paid active orders also accept admin-published poster deliveries under `orders/{order_id}/deliveries/...`. Review drafts are retained as temporary final-poster assets, approved finals are permanent assets, and clients receive only short-lived signed URLs from their own order page.
 
 ## Quality checks
 

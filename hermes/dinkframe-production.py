@@ -10,11 +10,6 @@ IDLE_MESSAGE = "No DINKFRAME generation jobs are queued."
 
 def main() -> int:
     npm = shutil.which("npm.cmd") or shutil.which("npm") or "npm"
-    browser_result = run_npm(npm, "automation:browser")
-    if browser_result.returncode != 0:
-        print_output(browser_result)
-        return browser_result.returncode
-
     result = run_npm(npm, "automation:run")
     output = combined_output(result)
 

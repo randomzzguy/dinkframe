@@ -1,24 +1,30 @@
-# Hermes and ChatGPT production automation
+# Hermes creative production automation
 
-This workflow keeps DINKFRAME and Supabase as the source of truth. Hermes may
-invoke the local companion, but it never receives the Supabase service-role key
-and never decides whether a queued message may be sent.
+This workflow keeps DINKFRAME and Supabase as the source of truth. The local
+runner authenticates only to narrow DINKFRAME endpoints. Hermes never receives
+the Supabase service-role key, and every generated artifact requires a one-time
+owner decision token.
 
 ## Production path
 
 1. The owner confirms payment on the admin order page.
-2. The owner queues **Prompt Studio**. DINKFRAME snapshots the order brief,
-   tournament logo, and current review/auto-send setting.
-3. The local companion claims the job through the token-protected Next.js API,
-   downloads short-lived copies, opens the dedicated Prompt Studio conversation,
-   verifies the composer, and pauses or sends.
-4. The owner manually copies the prompt returned by ChatGPT into the order page.
-5. The owner queues **Image generation**. The companion opens a fresh ChatGPT
-   chat with the copied prompt, tournament logo, and player photos.
-6. The owner takes over for result selection, sponsor placement, and finishing.
+2. The owner starts **Hermes production**. DINKFRAME snapshots the complete
+   brief and tournament logo.
+3. The local runner claims the job, downloads short-lived copies, and invokes
+   the `dinkframe-creative-director` skill through the `openai-codex`
+   subscription provider.
+4. Hermes sends the complete prompt and a one-time decision command to the
+   owner's private Telegram chat.
+5. An exact `APPROVE` command queues one image job with the approved prompt,
+   tournament logo, and player photos. `REVISE` queues a prompt revision.
+6. Hermes generates exactly one image, saves a durable local copy, and sends it
+   to Telegram with a second one-time decision command.
+7. The owner approves it for manual finishing or requests a new creative prompt.
+8. After sponsor placement and finishing, the owner publishes a review or final
+   file from the DINKFRAME admin order page.
 
-The companion does not extract ChatGPT responses, approve logins, handle
-CAPTCHAs, or queue jobs from incoming orders automatically.
+The runner never retries automatically, uses a paid fallback, adds sponsors, or
+publishes generated drafts to clients.
 
 ## One-time configuration
 
@@ -28,25 +34,22 @@ Generate a runner token locally:
 npm run automation:token
 ```
 
-Place the output in `.env.local` as
-`DINKFRAME_AUTOMATION_RUNNER_TOKEN`. Add the same server-only variable to the
-deployed Vercel project. Never send or commit it.
-
-For a deployed app, set the local-only value:
+Place it in `.env.local` and the deployed Vercel project as
+`DINKFRAME_AUTOMATION_RUNNER_TOKEN`. Never send or commit it. For production,
+the local-only app URL is:
 
 ```dotenv
-DINKFRAME_AUTOMATION_APP_URL=https://app.dinkframe.my
+DINKFRAME_AUTOMATION_APP_URL=https://dinkframe.my
 ```
 
-Start the dedicated companion browser:
+Authenticate Hermes to the subscription-backed provider and pin image
+generation to the same provider:
 
 ```powershell
-npm run automation:browser
+hermes auth add openai-codex
+hermes config set image_gen.provider openai-codex
+hermes config set image_gen.model gpt-image-2-medium
 ```
-
-Sign in to ChatGPT once in that browser window. It uses a separate profile under
-`~/.dinkframe` and exposes Chrome DevTools only on `127.0.0.1:9223`. Keep this
-window open while jobs are running.
 
 Run one queued job manually:
 
@@ -54,39 +57,42 @@ Run one queued job manually:
 npm run automation:run
 ```
 
-## Hermes connection
-
-Hermes 0.19 or newer can use the installed `dinkframe-production` skill. Its
-quiet cron wrapper is installed at
-`~/.hermes/scripts/dinkframe-production.py`. The Windows-native wrapper starts
-or reconnects the dedicated companion browser before polling production. For
-an interactive run, give Hermes this repository as its working directory and
-use:
-
-```text
-Run python hermes/dinkframe-production.py and report only if it prepared, sent, or failed a DINKFRAME job.
-```
-
-The wrapper produces no output when the queue is empty, which makes it suitable
-for Hermes no-agent cron. After choosing a configured delivery channel, create a
-schedule similar to:
+The legacy Playwright companion remains available for troubleshooting:
 
 ```powershell
-hermes cron create "every 1m" --no-agent --script dinkframe-production.py --workdir "C:\Users\hhcre\Desktop\DINKFRAME\webapp1.0" --deliver telegram --name "dinkframe-production"
+npm run automation:browser
+npm run automation:run:legacy
 ```
 
-Replace `telegram` with the owner's configured Hermes destination. Use
-`approvals.cron_mode: deny`; the wrapper does not need dangerous shell commands.
+## Telegram decisions
+
+The runner supplies the exact command. Supported shapes are:
+
+```text
+APPROVE <job-uuid> <one-time-token>
+REVISE <job-uuid> <one-time-token> <feedback>
+CANCEL <job-uuid> <one-time-token>
+```
+
+Hermes maps the command to `hermes/dinkframe-decision.py`. A casual `yes` or
+`send` without the job UUID and token cannot advance production. Tokens are
+stored remotely only as SHA-256 hashes and are cleared after use.
+
+## Scheduled runner
+
+The quiet Windows wrapper is `hermes/dinkframe-production.py`. It emits nothing
+when the queue is empty, so the existing no-agent, once-per-minute Hermes cron
+can continue using it. Detailed prompt/image review messages are sent directly
+to Telegram by the runner.
 
 ## Failure recovery
 
-- **Sign-in required:** open the companion browser, sign in, and retry the failed
-  job from the admin order page.
-- **ChatGPT UI changed:** leave the job failed, update and test the Playwright
-  locators, then retry.
-- **Review required:** press Send in the browser, then use **Mark sent** in the
-  admin generation history.
-- **Runner stopped:** claimed/preparing jobs automatically return to the queue
-  after their 15-minute lease expires.
-- **Wrong brief or assets:** cancel the job and queue a fresh snapshot. Never
-  mutate the contents of a job already in progress.
+- **Codex sign-in required:** run `hermes auth add openai-codex`, then use Retry
+  on the admin order page.
+- **Telegram delivery failed:** the job becomes failed; resolve connectivity and
+  use Retry. Image generation itself is not silently repeated.
+- **Runner stopped:** claimed/preparing jobs return to the queue after their
+  15-minute lease expires.
+- **Wrong brief or assets:** cancel the job and start a fresh immutable snapshot.
+- **Lost approval command:** cancel or retry from the admin page; never recreate
+  a token manually.

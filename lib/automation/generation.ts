@@ -70,8 +70,8 @@ export const GENERATION_STATUS_LABELS: Record<GenerationJobStatus, string> = {
   queued: "Queued",
   claimed: "Claimed",
   preparing: "Preparing ChatGPT",
-  awaiting_review: "Waiting for you to send",
-  submitted: "Sent to ChatGPT",
+  awaiting_review: "Waiting for Telegram approval",
+  submitted: "Owner approved",
   failed: "Needs attention",
   cancelled: "Cancelled",
 };

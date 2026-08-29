@@ -1,4 +1,4 @@
-import { Check, Download, FileText } from "lucide-react";
+import { Check, Download, Eye, FileImage, FileText } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { AmendmentForm } from "@/components/client/amendment-form";
@@ -57,11 +57,27 @@ export default async function OrderDetailsPage({
 
   const signedAssets = await Promise.all(
     (assetResult.data ?? []).map(async (asset) => {
-      const { data } = await supabase.storage
-        .from(asset.bucket_id)
-        .createSignedUrl(asset.storage_path, 300);
-      return { ...asset, signedUrl: data?.signedUrl ?? null };
+      const storage = supabase.storage.from(asset.bucket_id);
+      const [{ data: viewData }, { data: downloadData }] = await Promise.all([
+        storage.createSignedUrl(asset.storage_path, 300),
+        asset.asset_type === "final_poster"
+          ? storage.createSignedUrl(asset.storage_path, 300, {
+              download: asset.original_filename,
+            })
+          : Promise.resolve({ data: null }),
+      ]);
+      return {
+        ...asset,
+        signedUrl: viewData?.signedUrl ?? null,
+        downloadUrl: downloadData?.signedUrl ?? viewData?.signedUrl ?? null,
+      };
     }),
+  );
+  const posterDeliveries = signedAssets
+    .filter((asset) => asset.asset_type === "final_poster")
+    .sort((left, right) => right.created_at.localeCompare(left.created_at));
+  const sourceAssets = signedAssets.filter(
+    (asset) => asset.asset_type !== "final_poster",
   );
   const currentIndex =
     order.status === "archived"
@@ -122,6 +138,112 @@ export default async function OrderDetailsPage({
               );
             })}
           </ol>
+        </section>
+      )}
+
+      {(posterDeliveries.length > 0 ||
+        ["finishing_touches", "amendment_period", "completed"].includes(
+          order.status,
+        )) && (
+        <section className="relative mt-5 overflow-hidden rounded-2xl border border-black/10 bg-neutral-950 p-6 text-white sm:p-8">
+          <div className="court-grid pointer-events-none absolute inset-0 opacity-20" />
+          <div className="relative">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-primary text-xs font-bold tracking-[0.18em] uppercase">
+                  Poster delivery
+                </p>
+                <h2 className="font-heading mt-2 text-3xl font-bold tracking-tight">
+                  Your frames
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-300">
+                  Review drafts are for feedback. Files marked final are your
+                  approved, full-quality downloads.
+                </p>
+              </div>
+              {posterDeliveries.some((asset) => !asset.is_temporary) && (
+                <span className="bg-primary rounded-full px-3 py-1.5 text-xs font-bold text-black">
+                  Final ready
+                </span>
+              )}
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {posterDeliveries.map((asset) => (
+                <article
+                  key={asset.id}
+                  className="overflow-hidden rounded-2xl border border-white/12 bg-white/7"
+                >
+                  {asset.signedUrl ? (
+                    // Signed private URLs are intentionally rendered without image optimization.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={asset.signedUrl}
+                      alt={
+                        asset.is_temporary
+                          ? "DINKFRAME poster review draft"
+                          : "Final DINKFRAME poster"
+                      }
+                      className="aspect-4/5 w-full bg-neutral-900 object-cover object-top"
+                    />
+                  ) : (
+                    <div className="grid aspect-4/5 place-items-center bg-white/5">
+                      <FileImage className="size-9 text-neutral-500" />
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold">
+                          {asset.original_filename}
+                        </p>
+                        <p className="mt-1 text-xs text-neutral-400">
+                          {asset.is_temporary ? "Review draft" : "Final poster"}
+                          {" · "}
+                          {formatDateTime(asset.created_at)}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${
+                          asset.is_temporary
+                            ? "bg-amber-300/15 text-amber-200"
+                            : "bg-primary text-black"
+                        }`}
+                      >
+                        {asset.is_temporary ? "Review" : "Final"}
+                      </span>
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                      {asset.signedUrl && (
+                        <a
+                          href={asset.signedUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-xs font-bold transition hover:bg-white/10"
+                        >
+                          <Eye className="size-3.5" /> View
+                        </a>
+                      )}
+                      {asset.downloadUrl && (
+                        <a
+                          href={asset.downloadUrl}
+                          className="bg-primary inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold text-black transition hover:bg-lime-300"
+                        >
+                          <Download className="size-3.5" /> Download
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
+              {!posterDeliveries.length && (
+                <div className="rounded-2xl border border-dashed border-white/20 p-6 text-sm leading-6 text-neutral-400 sm:col-span-2 xl:col-span-3">
+                  No poster files have been published yet. They will appear here
+                  as soon as DINKFRAME sends a review or final version.
+                </div>
+              )}
+            </div>
+          </div>
         </section>
       )}
 
@@ -191,7 +313,7 @@ export default async function OrderDetailsPage({
       <section className="mt-5 rounded-2xl border border-black/10 bg-white p-6">
         <h2 className="font-bold">Uploaded assets</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {signedAssets.map((asset) => (
+          {sourceAssets.map((asset) => (
             <article
               key={asset.id}
               className="overflow-hidden rounded-xl border border-black/10"
@@ -231,6 +353,11 @@ export default async function OrderDetailsPage({
               </div>
             </article>
           ))}
+          {!sourceAssets.length && (
+            <p className="text-sm text-neutral-500">
+              No original assets are available.
+            </p>
+          )}
         </div>
       </section>
 

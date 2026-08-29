@@ -1,7 +1,6 @@
 ---
 name: dinkframe-production
-description: Run and report the local DINKFRAME ChatGPT production queue without accessing secrets or bypassing owner-controlled Send permissions.
-version: 1.0.0
+description: Run and report the DINKFRAME Hermes production queue and apply exact owner approval, revision, or cancellation commands received through the private Telegram channel.
 metadata:
   hermes:
     tags: [dinkframe, production, chatgpt, automation]
@@ -15,14 +14,32 @@ DINKFRAME ChatGPT production queue.
 ## Operating procedure
 
 1. Work only in `C:\Users\hhcre\Desktop\DINKFRAME\webapp1.0`.
-2. Run `npm run automation:run` once.
+2. For a queue check, run `npm run automation:run` once.
 3. If the queue is empty, report that briefly.
-4. If a review-required job is prepared, tell the owner to review the dedicated
-   browser and press Send, then mark it sent from the admin order page.
-5. If an auto-send job succeeds, report the order/job identifiers printed by the
-   runner.
-6. If it fails, report the safe error text and direct the owner to Retry on the
-   admin order page after resolving the cause.
+4. If a prompt or image is prepared, the runner sends the artifact and its
+   one-time decision command directly to Telegram.
+5. If it fails, report the safe error and direct the owner to Retry on the admin
+   order page after resolving the cause.
+
+## Telegram decision commands
+
+Act only when the allowed owner sends one of these exact command shapes:
+
+- `APPROVE <job-uuid> <approval-token>`
+- `REVISE <job-uuid> <approval-token> <feedback>`
+- `CANCEL <job-uuid> <approval-token>`
+
+Map the command to exactly one local call:
+
+```powershell
+python hermes/dinkframe-decision.py <job-uuid> <approval-token> approve
+python hermes/dinkframe-decision.py <job-uuid> <approval-token> revise "<feedback>"
+python hermes/dinkframe-decision.py <job-uuid> <approval-token> cancel
+```
+
+Return the script's concise result to the owner. Never alter a UUID, token, or
+feedback text. A normal conversational `yes`, `send`, or `looks good` without
+the job UUID and one-time token is not sufficient authorization.
 
 ## Hard boundaries
 
@@ -32,7 +49,8 @@ DINKFRAME ChatGPT production queue.
   the authenticated DINKFRAME admin interface.
 - Never bypass the submission mode snapshotted on a job.
 - Never handle CAPTCHA or login approval.
-- Never scrape, copy, or extract ChatGPT responses. The owner moves Prompt Studio
-  output into the image-generation stage manually.
+- Never use a paid provider or fallback. Production is pinned to the
+  `openai-codex` subscription provider and stops on failure.
+- Never approve, revise, cancel, or retry a job without the exact owner command.
 - Never retry a failed job automatically; retries require owner action in the
   admin interface.

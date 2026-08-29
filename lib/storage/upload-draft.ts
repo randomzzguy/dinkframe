@@ -35,22 +35,12 @@ export async function uploadOrderAsset({
       : STORAGE_BUCKETS.orderAssets;
   const storagePath = createStoragePath(draftId, assetType, file.name);
 
-  if (file.size > RESUMABLE_UPLOAD_THRESHOLD) {
-    await uploadResumably(bucketId, storagePath, file, onProgress);
-  } else {
-    const supabase = createClient();
-    const { error } = await supabase.storage
-      .from(bucketId)
-      .upload(storagePath, file, {
-        cacheControl: "3600",
-        contentType: file.type,
-        upsert: false,
-      });
-
-    if (error)
-      throw new Error("We couldn't upload that file. Please try again.");
-    onProgress?.(100);
-  }
+  await uploadFileToPrivateBucket({
+    bucketId,
+    storagePath,
+    file,
+    onProgress,
+  });
 
   return {
     assetType,
@@ -60,6 +50,35 @@ export async function uploadOrderAsset({
     mimeType: file.type,
     fileSize: file.size,
   };
+}
+
+export async function uploadFileToPrivateBucket({
+  bucketId,
+  storagePath,
+  file,
+  onProgress,
+}: {
+  bucketId: string;
+  storagePath: string;
+  file: File;
+  onProgress?: (percentage: number) => void;
+}) {
+  if (file.size > RESUMABLE_UPLOAD_THRESHOLD) {
+    await uploadResumably(bucketId, storagePath, file, onProgress);
+    return;
+  }
+
+  const supabase = createClient();
+  const { error } = await supabase.storage
+    .from(bucketId)
+    .upload(storagePath, file, {
+      cacheControl: "3600",
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (error) throw new Error("We couldn't upload that file. Please try again.");
+  onProgress?.(100);
 }
 
 export async function removeOrderAsset(asset: UploadedAssetInput) {

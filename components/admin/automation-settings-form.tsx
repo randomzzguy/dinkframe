@@ -67,8 +67,8 @@ export function AutomationSettingsForm({
         <ShieldCheck className="mt-0.5 size-4 shrink-0" />
         <p>
           {autoSend
-            ? "Auto-send is currently enabled. Responses still require your manual review and copy action."
-            : "Review mode is currently active. The companion will stop before every Send action."}
+            ? "Auto-send remains available only to the legacy Playwright companion. The Hermes workflow always requires Telegram approval before image generation."
+            : "Review mode is active. The Hermes workflow asks for approval in Telegram before image generation and again after the draft is ready."}
         </p>
       </div>
 

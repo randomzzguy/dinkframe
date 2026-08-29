@@ -79,6 +79,14 @@ export async function POST(request: Request) {
         stage: job.stage,
         submissionMode: job.submission_mode,
         inputText: job.input_text,
+        revisionFeedback: job.revision_feedback,
+        orderNumber:
+          typeof job.brief_snapshot === "object" &&
+          job.brief_snapshot !== null &&
+          !Array.isArray(job.brief_snapshot) &&
+          typeof job.brief_snapshot.orderNumber === "string"
+            ? job.brief_snapshot.orderNumber
+            : null,
         targetUrl:
           job.stage === "prompt_generation"
             ? PROMPT_STUDIO_CHAT_URL

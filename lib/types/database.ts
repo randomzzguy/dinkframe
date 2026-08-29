@@ -362,6 +362,12 @@ export type Database = {
           submitted_at: string | null;
           completed_at: string | null;
           last_error: string | null;
+          output_text: string | null;
+          output_local_path: string | null;
+          revision_feedback: string | null;
+          approval_token_hash: string | null;
+          approval_requested_at: string | null;
+          approved_at: string | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -383,6 +389,12 @@ export type Database = {
           submitted_at?: string | null;
           completed_at?: string | null;
           last_error?: string | null;
+          output_text?: string | null;
+          output_local_path?: string | null;
+          revision_feedback?: string | null;
+          approval_token_hash?: string | null;
+          approval_requested_at?: string | null;
+          approved_at?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -513,6 +525,28 @@ export type Database = {
           target_runner_id: string;
           next_status: Database["public"]["Enums"]["generation_job_status"];
           job_error?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["generation_jobs"]["Row"];
+      };
+      publish_poster_delivery: {
+        Args: {
+          target_order_id: string;
+          target_storage_path: string;
+          target_original_filename: string;
+          target_mime_type: string;
+          target_file_size: number;
+          target_is_review: boolean;
+          client_message?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["order_assets"]["Row"];
+      };
+      complete_generation_job_for_review: {
+        Args: {
+          target_job_id: string;
+          target_runner_id: string;
+          generated_output_text: string | null;
+          generated_output_local_path: string | null;
+          generated_approval_token_hash: string;
         };
         Returns: Database["public"]["Tables"]["generation_jobs"]["Row"];
       };

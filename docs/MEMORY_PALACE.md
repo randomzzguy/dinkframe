@@ -69,12 +69,15 @@ Where it lives:
 - Admin shell: `components/shared/app-shell.tsx`
 - Searchable production queue: `app/admin/orders/page.tsx`
 - Payment settings: `app/admin/settings` and `components/admin/payment-settings-form.tsx`
-- ChatGPT submission mode: `components/admin/automation-settings-form.tsx`
+- Legacy Playwright submission mode: `components/admin/automation-settings-form.tsx`
 - Per-order production queue: `components/admin/generation-controls.tsx`
+- Review/final delivery: `components/admin/poster-delivery-uploader.tsx` and `public.publish_poster_delivery`
 - Hermes/local companion runbook: `docs/HERMES_AUTOMATION.md`
 - Sole-admin server check: `lib/auth/guards.ts`
 
-Rule to remember: there is one owner, not a team-permissions product. The configured `ADMIN_EMAIL` and the `profiles.role = 'admin'` RLS identity must both match. Studio automation defaults to review-before-send; auto-send is an admin-owned permission for deliberately queued messages, not a blanket trigger for incoming orders.
+Rule to remember: there is one owner, not a team-permissions product. The configured `ADMIN_EMAIL` and the `profiles.role = 'admin'` RLS identity must both match. Hermes production always requires exact one-time Telegram decisions; a normal conversational “yes” is not approval. The older auto-send setting applies only to the legacy Playwright fallback.
+
+Poster delivery rule: the admin uploads directly to a private order-scoped Storage path, but the browser cannot publish it by itself. The server and database verify the order, payment, path, object, type, and size before a review draft or final poster becomes visible to the client. Review drafts use `final_poster` with `is_temporary = true`; approved finals use `is_temporary = false`.
 
 ## The job board — order state
 
@@ -108,7 +111,7 @@ Where it lives:
 - Type contract: `lib/types/database.ts`
 - Runner endpoints: `app/api/automation/jobs`
 
-Rule to remember: files never live in Postgres. A client must not read another client’s row or object even if they guess an ID or path. Service-role access is reserved for narrow server-only operations. The ChatGPT submission preference is an admin-only singleton and each future generation job snapshots the active mode.
+Rule to remember: files never live in Postgres. A client must not read another client’s row or object even if they guess an ID or path. Service-role access is reserved for narrow server-only operations. Automation approval tokens are hashed, generated images remain owner-local until finishing, and only the explicit poster-publication path exposes a file to the client.
 
 ## The amendment counter — commercial rules
 
@@ -146,6 +149,6 @@ If any of these turn red, stop and fix the foundation before adding features:
 
 ## Current build marker
 
-Local MVP foundation complete: project configuration, all route surfaces, public site, magic-link session plumbing, guarded layouts, editable repeat-client profiles, durable draft IDs, resumable private uploads, atomic order submission, signed asset views, client amendments, a searchable admin queue, admin payment/status actions, payment settings and QR management, an admin-queued ChatGPT production pipeline, streaming ZIP exports, verified archive/delete controls, typed domain logic, tests, schema, seeds, RLS, and private buckets.
+Local MVP foundation complete: project configuration, all route surfaces, public site, magic-link session plumbing, guarded layouts, editable repeat-client profiles, durable draft IDs, resumable private uploads, atomic order submission, signed asset views, client amendments, a searchable admin queue, admin payment/status actions, payment settings and QR management, an order-linked Hermes creative-director pipeline with hashed Telegram approvals and owner-local image capture, private review/final poster publication and client downloads, streaming ZIP exports, verified archive/delete controls, typed domain logic, tests, schema, seeds, RLS, and private buckets.
 
-Next slice: connect a Supabase project, apply and validate migrations, run automated RLS integration tests, then perform browser smoke tests and deploy to Vercel.
+Next slice: deploy the application update, resume the Hermes cron, and run a complete synthetic prompt-approval-image-approval smoke test.

@@ -25,11 +25,16 @@ export function createAssetArchivePath(
     id: string;
     asset_type: AssetType;
     original_filename: string;
+    is_temporary?: boolean;
   },
   index: number,
 ) {
   const filename = sanitizeFilename(asset.original_filename);
-  return `${assetFolders[asset.asset_type]}/${String(index + 1).padStart(2, "0")}-${asset.id.slice(0, 8)}-${filename}`;
+  const folder =
+    asset.asset_type === "final_poster" && asset.is_temporary
+      ? "review-posters"
+      : assetFolders[asset.asset_type];
+  return `${folder}/${String(index + 1).padStart(2, "0")}-${asset.id.slice(0, 8)}-${filename}`;
 }
 
 export function sanitizeArchiveSegment(value: string) {

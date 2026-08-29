@@ -66,6 +66,14 @@
 - Confirm deletion removes exact Storage objects and cascaded order rows.
 - Confirm `deleted_order_log` retains only the minimal deletion receipt.
 
+## Poster delivery
+
+- Confirm an unpaid order cannot publish a review or final poster.
+- Publish a review poster and confirm the client sees a preview, review label, download action, and client-visible update.
+- Publish a final poster and confirm it is clearly distinguished from review drafts.
+- Confirm another client cannot read either poster row or Storage object.
+- Export the order and confirm review drafts are in `review-posters/` and approved finals are in `final-posters/`.
+
 ## Browsers
 
 - Desktop Chrome

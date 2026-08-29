@@ -22,6 +22,7 @@ import {
   isStandardStatusTransition,
   ORDER_STATUS_LABELS,
 } from "@/lib/orders/status";
+import { POSTER_DELIVERY_KINDS } from "@/lib/orders/delivery";
 import { ORDER_STATUSES, PAYMENT_STATUSES } from "@/lib/types/domain";
 
 export type AdminActionState = {
@@ -57,6 +58,30 @@ const generationJobSchema = z.object({
   orderId: z.uuid(),
   jobId: z.uuid(),
 });
+const posterDeliverySchema = z
+  .object({
+    orderId: z.uuid(),
+    kind: z.enum(POSTER_DELIVERY_KINDS),
+    storagePath: z.string().trim().min(1).max(1024),
+    originalFilename: z.string().trim().min(1).max(180),
+    mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+    fileSize: z
+      .number()
+      .int()
+      .positive()
+      .max(25 * 1024 * 1024),
+    clientMessage: z.string().trim().max(1000).optional(),
+  })
+  .superRefine((value, context) => {
+    const expectedPrefix = `orders/${value.orderId}/deliveries/${value.kind}/`;
+    if (!value.storagePath.startsWith(expectedPrefix)) {
+      context.addIssue({
+        code: "custom",
+        message: "The poster upload path is invalid.",
+        path: ["storagePath"],
+      });
+    }
+  });
 
 const ACTIVE_GENERATION_STATUSES = [
   "queued",
@@ -200,6 +225,7 @@ export async function cancelGenerationJob(
       status: "cancelled",
       completed_at: new Date().toISOString(),
       lease_expires_at: null,
+      approval_token_hash: null,
     })
     .eq("id", parsed.data.jobId)
     .eq("order_id", parsed.data.orderId)
@@ -237,6 +263,10 @@ export async function retryGenerationJob(
       lease_expires_at: null,
       completed_at: null,
       last_error: null,
+      output_text: null,
+      output_local_path: null,
+      approval_token_hash: null,
+      approval_requested_at: null,
     })
     .eq("id", parsed.data.jobId)
     .eq("order_id", parsed.data.orderId)
@@ -286,6 +316,55 @@ export async function markGenerationJobSubmitted(
 
   revalidateOrderPaths(parsed.data.orderId);
   return { status: "success", message: "Job marked as sent." };
+}
+
+export async function publishPosterDelivery(input: {
+  orderId: string;
+  kind: "review" | "final";
+  storagePath: string;
+  originalFilename: string;
+  mimeType: string;
+  fileSize: number;
+  clientMessage?: string;
+}): Promise<AdminActionState> {
+  const parsed = posterDeliverySchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message:
+        parsed.error.issues[0]?.message ?? "Check the poster delivery details.",
+    };
+  }
+
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase.rpc("publish_poster_delivery", {
+    target_order_id: parsed.data.orderId,
+    target_storage_path: parsed.data.storagePath,
+    target_original_filename: parsed.data.originalFilename,
+    target_mime_type: parsed.data.mimeType,
+    target_file_size: parsed.data.fileSize,
+    target_is_review: parsed.data.kind === "review",
+    client_message: parsed.data.clientMessage,
+  });
+
+  if (error) {
+    const { error: cleanupError } = await supabase.storage
+      .from("order-assets")
+      .remove([parsed.data.storagePath]);
+    if (cleanupError) {
+      console.error("poster_delivery_cleanup_failed", cleanupError);
+    }
+    return adminError("poster_delivery_publish_failed", error);
+  }
+
+  revalidateOrderPaths(parsed.data.orderId);
+  return {
+    status: "success",
+    message:
+      parsed.data.kind === "review"
+        ? "Review poster published to the client."
+        : "Final poster published to the client.",
+  };
 }
 
 export async function verifyLocalArchive(
@@ -444,7 +523,6 @@ async function queueGenerationJob({
       .from("generation_jobs")
       .select("id")
       .eq("order_id", orderId)
-      .eq("stage", stage)
       .in("status", [...ACTIVE_GENERATION_STATUSES])
       .limit(1),
   ]);
@@ -473,7 +551,7 @@ async function queueGenerationJob({
   if (activeJobResult.data?.length) {
     return {
       status: "error",
-      message: "This stage already has an active generation job.",
+      message: "This order already has an active generation workflow.",
     };
   }
 

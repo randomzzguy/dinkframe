@@ -33,4 +33,19 @@ describe("order export paths", () => {
   it("falls back when a segment contains no safe characters", () => {
     expect(sanitizeArchiveSegment("⚡️")).toBe("untitled");
   });
+
+  it("separates review drafts from approved final posters", () => {
+    const base = {
+      id: "12345678-1234-1234-1234-123456789012",
+      asset_type: "final_poster" as const,
+      original_filename: "Jordan.png",
+    };
+
+    expect(createAssetArchivePath({ ...base, is_temporary: true }, 0)).toBe(
+      "review-posters/01-12345678-Jordan.png",
+    );
+    expect(createAssetArchivePath({ ...base, is_temporary: false }, 0)).toBe(
+      "final-posters/01-12345678-Jordan.png",
+    );
+  });
 });
