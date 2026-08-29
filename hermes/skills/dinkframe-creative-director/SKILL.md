@@ -36,6 +36,8 @@ Preparing or reviewing a prompt never permits image generation.
 5. Art-direct every required text tier. Facts may be professionally formatted
    with improved casing, line breaks, date style, scale, and grouping, but their
    meaning and spelling must not change. Do not reproduce raw form formatting.
+   Treat every Instagram or social handle as private publishing metadata: omit
+   it from the production prompt and never render it on the poster.
 6. Assign each reference a role and protect face, anatomy, clothing, equipment,
    partner identity, and event-logo geometry.
 7. Reserve calm sponsor-safe space. Do not generate supplied or fictional
@@ -50,9 +52,9 @@ Preparing or reviewing a prompt never permits image generation.
   texture; logo and sponsor-safe area; factual text lock; final quality gate.
 - State `4:5 portrait, 1080 × 1350, Instagram-ready`.
 - Quote the exact text that must appear. Keep decorative copy out.
-- Explicitly require tournament, date, location, event, partner, and handle text
-  to feel integrated into a premium sports campaign—not a plain lowercase list
-  with utility icons.
+- Explicitly require tournament, date, location, event, and partner text to feel
+  integrated into a premium sports campaign—not a plain lowercase list with
+  utility icons.
 - Make the theme recognizable even if the requested color were removed.
 - When a theme is culturally inspired, add a conspicuous **TEXT EXCLUSION**:
   no unsupplied language, faux glyphs, seals, stamps, or pseudo-writing. Express
@@ -76,4 +78,5 @@ Preserve everything not criticized. Translate feedback into concrete changes to
 grid, scale, type, palette, image role, depth, or texture. “More premium” means
 better restraint, spacing, material logic, and lighting—not more glow. “More
 thematic” means strengthening the theme across composition, typography, and
-motifs—not adding a single cliché symbol.
+motifs—not adding a single cliché symbol. Remove social handles during every
+revision even when an older approved prompt included one.

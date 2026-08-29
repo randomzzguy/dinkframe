@@ -65,7 +65,9 @@ and one clear supporting voice. Build a designed hierarchy, not a data list.
   turn the bottom of the poster into an app settings list.
 - Preserve exact facts while improving presentation. For example,
   `2026-09-21 to 2026-09-29` may become `21—29 SEP 2026`, and `the hood kl` may
-  become `THE HOOD KL`. Do not alter names, handles, partners, or results.
+  become `THE HOOD KL`. Do not alter names, partners, or results. Treat social
+  handles as private tagging metadata: exclude them from the production prompt
+  and visible artwork even when they appear in the order brief.
 
 Quote every required string in the generation prompt and prohibit additional
 decorative copy. Add a text exclusion for every culturally inspired direction:

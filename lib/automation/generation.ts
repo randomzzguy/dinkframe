@@ -58,7 +58,7 @@ export type ClaimedGenerationAsset = GenerationAssetManifestItem & {
   downloadUrl: string;
 };
 
-export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v3";
+export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v4";
 export const IMAGE_GENERATION_TEMPLATE_VERSION = "image-generation-v1";
 
 export const GENERATION_STAGE_LABELS: Record<GenerationJobStage, string> = {
@@ -88,7 +88,6 @@ export function buildPromptStudioMessage(snapshot: GenerationBriefSnapshot) {
     "",
     `Order: ${snapshot.orderNumber}`,
     `Player: ${snapshot.playerName}`,
-    `Instagram: ${snapshot.instagramHandle ? `@${snapshot.instagramHandle}` : "Not supplied"}`,
     `Tournament: ${snapshot.tournamentName}`,
     `Dates: ${snapshot.tournamentStartDate} to ${snapshot.tournamentEndDate}`,
     `Location: ${snapshot.tournamentLocation}`,

@@ -53,6 +53,8 @@ describe("generation automation", () => {
     expect(message).toContain("plain lowercase list");
     expect(message).toContain("hard TEXT EXCLUSION");
     expect(message).toContain("faux glyphs, seals, stamps, or pseudo-writing");
+    expect(message).not.toContain("@aisyah");
+    expect(message).not.toContain("Instagram:");
   });
 
   it("only sends the tournament logo to Prompt Studio", () => {
