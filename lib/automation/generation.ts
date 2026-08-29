@@ -58,7 +58,7 @@ export type ClaimedGenerationAsset = GenerationAssetManifestItem & {
   downloadUrl: string;
 };
 
-export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v2";
+export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v3";
 export const IMAGE_GENERATION_TEMPLATE_VERSION = "image-generation-v1";
 
 export const GENERATION_STAGE_LABELS: Record<GenerationJobStage, string> = {
@@ -84,6 +84,7 @@ export function buildPromptStudioMessage(snapshot: GenerationBriefSnapshot) {
     "Keep the final prompt between 350 and 650 words. Make the selected theme unmistakable through composition, typography, and graphic language—not color alone.",
     "Preserve every fact, but professionally improve casing, date display, line breaks, and typographic grouping instead of copying raw form formatting.",
     "Treat all supporting information as designed sports-poster typography, never as a plain lowercase list with utility icons.",
+    "For culturally inspired themes, include a hard TEXT EXCLUSION: render zero unsupplied languages, faux glyphs, seals, stamps, or pseudo-writing. Build the theme through composition, materials, geometry, rhythm, and supplied copy only.",
     "",
     `Order: ${snapshot.orderNumber}`,
     `Player: ${snapshot.playerName}`,

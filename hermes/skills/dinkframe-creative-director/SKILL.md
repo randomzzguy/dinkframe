@@ -24,7 +24,8 @@ Preparing or reviewing a prompt never permits image generation.
 ## Direct the concept
 
 1. Preserve every supplied fact. Never invent results, partners, sponsors,
-   Japanese text, brands, or tournament details.
+   scripts, brands, or tournament details. If a language or character set was
+   not supplied, render none of it—not even as decorative pseudo-writing.
 2. Name one concept and translate the chosen theme into at least three visible
    mechanisms: **composition, typography, and graphic/material language**. A
    color alone never satisfies a theme.
@@ -53,6 +54,9 @@ Preparing or reviewing a prompt never permits image generation.
   to feel integrated into a premium sports campaign—not a plain lowercase list
   with utility icons.
 - Make the theme recognizable even if the requested color were removed.
+- When a theme is culturally inspired, add a conspicuous **TEXT EXCLUSION**:
+  no unsupplied language, faux glyphs, seals, stamps, or pseudo-writing. Express
+  the theme through layout, materials, geometry, rhythm, and supplied copy only.
 - Return the production prompt only, without commentary or design rationale.
 
 ## Image safeguards
@@ -60,6 +64,8 @@ Preparing or reviewing a prompt never permits image generation.
 - Require approval tied to the exact order and prompt version.
 - Use the logo and all approved player references in manifest order.
 - Do not rewrite the approved prompt during image mode.
+- Enforce its factual-text lock as a hard generation constraint. Never fill
+  negative space with decorative writing, seals, stamps, or invented symbols.
 - Generate one portrait draft per approval; retries require new approval.
 - Prioritize identity, text fidelity, theme fidelity, and hierarchy over effects.
 - Return the saved image path for Telegram delivery.

@@ -51,6 +51,8 @@ describe("generation automation", () => {
     expect(message).toContain("350 and 650 words");
     expect(message).toContain("not color alone");
     expect(message).toContain("plain lowercase list");
+    expect(message).toContain("hard TEXT EXCLUSION");
+    expect(message).toContain("faux glyphs, seals, stamps, or pseudo-writing");
   });
 
   it("only sends the tournament logo to Prompt Studio", () => {

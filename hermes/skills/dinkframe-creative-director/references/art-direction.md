@@ -33,8 +33,11 @@ Use the selected family as a governing visual system:
   cropped or vertical Latin type, indigo/ink material cues, and one expressive
   brush or printmaking gesture. When blue is requested, treat it as _ai_ indigo
   and pair it with warm paper white plus an optional tiny vermilion accent. Do
-  not invent Japanese characters or rely on flags, torii, samurai, sakura, or a
-  lone brush stroke as the theme.
+  not render Japanese writing, faux kana/kanji, calligraphic pseudo-writing,
+  hanko-style seals, stamps, or glyph-like symbols unless that exact asset or
+  text was supplied. Do not rely on flags, torii, samurai, sakura, or a lone
+  brush stroke as the theme. Leave deliberate negative space or use
+  non-linguistic court/grid geometry instead.
 - **Tropical:** warm light, organic rhythm, sophisticated regional color and
   texture—not novelty leaves.
 - **Experimental / Surprise:** derive one repeatable system from the strongest
@@ -65,8 +68,10 @@ and one clear supporting voice. Build a designed hierarchy, not a data list.
   become `THE HOOD KL`. Do not alter names, handles, partners, or results.
 
 Quote every required string in the generation prompt and prohibit additional
-decorative copy. If text is too dense, solve it with scale, grouping, and
-negative space—not tiny type.
+decorative copy. Add a text exclusion for every culturally inspired direction:
+no unsupplied writing systems, faux glyphs, seals, stamps, or pseudo-writing. If
+text is too dense, solve it with scale, grouping, and negative space—not tiny
+type.
 
 ## Photography and protected assets
 
@@ -88,3 +93,5 @@ Before returning a prompt, verify:
 4. Supporting facts look art-directed, not copied from a form.
 5. Every fact is correct and every face/logo remains protected.
 6. The composition survives a centered 4:5 crop and leaves sponsor-safe space.
+7. Every visible character belongs to supplied copy; no faux writing, seal, or
+   decorative glyph has been introduced.
