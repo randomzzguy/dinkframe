@@ -43,6 +43,13 @@
 
 ## ChatGPT production companion
 
+- Confirm a prompt review arrives with native Approve, Revise, and Cancel buttons and no raw token.
+- Confirm only the configured Telegram owner can resolve a decision card.
+- Tap Revise, send feedback, and confirm the message is intercepted without an LLM reply before a new prompt job is queued.
+- Enter revision mode, send `/cancel`, and confirm a fresh decision card appears without changing job state.
+- Tap Approve twice and confirm the decision executes only once and the buttons disappear.
+- Confirm an expired or already-used action displays a safe message without changing another job.
+
 - Confirm an unpaid order cannot queue either production stage.
 - Queue Prompt Studio with review mode and confirm the companion attaches only the tournament logo, fills the correct dedicated conversation, and does not click Send.
 - Mark the reviewed job sent from the admin order page.

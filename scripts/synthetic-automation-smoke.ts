@@ -315,9 +315,19 @@ async function cleanupSmokeOrder() {
   }
 
   await cleanupPartial(state);
+  const automationRoot = path.resolve(
+    process.cwd(),
+    ".dinkframe",
+    "automation",
+  );
+  const localOrderDirectory = path.resolve(automationRoot, state.orderNumber);
+  if (!localOrderDirectory.startsWith(`${automationRoot}${path.sep}`)) {
+    throw new Error("Cleanup refused: invalid synthetic automation path.");
+  }
+  await rm(localOrderDirectory, { recursive: true, force: true });
   await rm(statePath, { force: true });
   console.log(
-    `Removed synthetic order ${state.orderNumber} and its private assets.`,
+    `Removed synthetic order ${state.orderNumber}, its private assets, and its local draft.`,
   );
 }
 

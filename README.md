@@ -78,8 +78,10 @@ Never expose the service-role key to a Client Component or prefix it with `NEXT_
 
 After payment is confirmed, the owner starts one Hermes workflow from the admin
 order. The local runner creates a professional prompt, sends it to private
-Telegram with a one-time approval token, generates exactly one image only after
-approval, and returns that image to Telegram for a second decision. It is pinned
+Telegram with owner-only Approve, Revise, and Cancel buttons, generates exactly
+one image only after approval, and returns that image with a second decision
+keyboard attached directly to it. Button payloads contain opaque local action IDs rather than approval
+tokens. The workflow is pinned
 to the subscription-backed `openai-codex` provider with no paid fallback. Setup,
 commands, and failure recovery are documented in
 [`docs/HERMES_AUTOMATION.md`](./docs/HERMES_AUTOMATION.md).

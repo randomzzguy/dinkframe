@@ -75,7 +75,7 @@ Where it lives:
 - Hermes/local companion runbook: `docs/HERMES_AUTOMATION.md`
 - Sole-admin server check: `lib/auth/guards.ts`
 
-Rule to remember: there is one owner, not a team-permissions product. The configured `ADMIN_EMAIL` and the `profiles.role = 'admin'` RLS identity must both match. Hermes production always requires exact one-time Telegram decisions; a normal conversational “yes” is not approval. The older auto-send setting applies only to the legacy Playwright fallback.
+Rule to remember: there is one owner, not a team-permissions product. The configured `ADMIN_EMAIL` and the `profiles.role = 'admin'` RLS identity must both match. Hermes production always requires an owner-only, one-time Telegram decision. Native buttons carry opaque local action IDs; a normal conversational “yes” is not approval. The older auto-send setting applies only to the legacy Playwright fallback.
 
 Poster delivery rule: the admin uploads directly to a private order-scoped Storage path, but the browser cannot publish it by itself. The server and database verify the order, payment, path, object, type, and size before a review draft or final poster becomes visible to the client. Review drafts use `final_poster` with `is_temporary = true`; approved finals use `is_temporary = false`.
 
@@ -149,6 +149,6 @@ If any of these turn red, stop and fix the foundation before adding features:
 
 ## Current build marker
 
-Local MVP foundation complete: project configuration, all route surfaces, public site, magic-link session plumbing, guarded layouts, editable repeat-client profiles, durable draft IDs, resumable private uploads, atomic order submission, signed asset views, client amendments, a searchable admin queue, admin payment/status actions, payment settings and QR management, an order-linked Hermes creative-director pipeline with hashed Telegram approvals and owner-local image capture, private review/final poster publication and client downloads, streaming ZIP exports, verified archive/delete controls, typed domain logic, tests, schema, seeds, RLS, and private buckets.
+Local MVP foundation complete: project configuration, all route surfaces, public site, magic-link session plumbing, guarded layouts, editable repeat-client profiles, durable draft IDs, resumable private uploads, atomic order submission, signed asset views, client amendments, a searchable admin queue, admin payment/status actions, payment settings and QR management, an order-linked Hermes creative-director pipeline with hashed approvals, native owner-only Telegram decision buttons, revision feedback interception, and owner-local image capture, private review/final poster publication and client downloads, streaming ZIP exports, verified archive/delete controls, typed domain logic, tests, schema, seeds, RLS, and private buckets.
 
-Next slice: deploy the application update, resume the Hermes cron, and run a complete synthetic prompt-approval-image-approval smoke test.
+Next slice: run a synthetic button-based revision/approval smoke test, then exercise the workflow on the next real paid order.

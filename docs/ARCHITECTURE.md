@@ -29,7 +29,7 @@ Admin server action → `ADMIN_EMAIL` guard → RLS admin role → transition va
 
 ### Run Hermes creative production
 
-Admin starts a paid order workflow → server reloads and snapshots the authoritative order/assets → admin-only prompt job → local runner authenticates to a narrow Next.js API → service-role RPC atomically leases the job → short-lived signed assets → Hermes creative-director skill through `openai-codex` → prompt and one-time token delivered to private Telegram → exact owner approval queues one image job → Hermes generates one image and saves a durable owner-machine copy → second one-time Telegram decision → manual finishing and explicit client publication. Approval tokens are stored remotely only as hashes; retries and paid fallbacks are never automatic.
+Admin starts a paid order workflow → server reloads and snapshots the authoritative order/assets → admin-only prompt job → local runner authenticates to a narrow Next.js API → service-role RPC atomically leases the job → short-lived signed assets → Hermes creative-director skill through `openai-codex` → prompt with an attached owner-only Telegram decision keyboard → opaque local action resolves the hashed one-time token → approval queues one image job → Hermes generates one image and saves a durable owner-machine copy → image with an attached Telegram decision keyboard → manual finishing and explicit client publication. The Hermes user plugin subclasses the bundled Telegram adapter for `df:` callbacks and intercepts revision feedback before the LLM. Artifact delivery is single-attempt; retries and paid fallbacks are never automatic.
 
 ### Publish a poster to a client
 

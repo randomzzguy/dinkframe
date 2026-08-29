@@ -24,6 +24,24 @@ const appUrl = (
 ).replace(/\/$/, "");
 const runnerId = `hermes-${os.hostname()}`.slice(0, 120);
 const durableRoot = path.join(process.cwd(), ".dinkframe", "automation");
+const telegramActionRoot = path.join(
+  process.cwd(),
+  ".dinkframe",
+  "telegram-actions",
+);
+const hermesPython = path.join(
+  process.env.LOCALAPPDATA ?? path.join(os.homedir(), "AppData", "Local"),
+  "hermes",
+  "hermes-agent",
+  "venv",
+  "Scripts",
+  "python.exe",
+);
+const telegramButtonScript = path.join(
+  process.cwd(),
+  "hermes",
+  "dinkframe-telegram-buttons.py",
+);
 
 type ClaimedJob = {
   id: string;
@@ -34,6 +52,16 @@ type ClaimedJob = {
   inputText: string;
   revisionFeedback: string | null;
   assets: ClaimedGenerationAsset[];
+};
+
+type TelegramActionRecord = {
+  actionId: string;
+  jobId: string;
+  approvalToken: string;
+  stage: GenerationJobStage;
+  orderLabel: string;
+  createdAt: string;
+  messageId?: string;
 };
 
 void main().catch((error: unknown) => {
@@ -118,17 +146,15 @@ async function runPromptJob(
     outputText: output.trim(),
     approvalToken: token,
   });
-  await sendTelegram(
+  await deliverReview(
+    job,
+    token,
     [
       `DINKFRAME ${job.orderNumber ?? job.orderId} — PROMPT READY`,
       "",
       output.trim(),
       "",
-      "To continue, reply exactly:",
-      `APPROVE ${job.id} ${token}`,
-      "",
-      "Or request a revision:",
-      `REVISE ${job.id} ${token} your feedback here`,
+      "Review the prompt, then choose an option below.",
     ].join("\n"),
   );
 }
@@ -165,14 +191,77 @@ async function runImageJob(
     outputLocalPath: durablePath,
     approvalToken: token,
   });
-  await sendTelegram(
+  await deliverReview(
+    job,
+    token,
     [
       `MEDIA:${durablePath.replaceAll("\\", "/")}`,
       `DINKFRAME ${job.orderNumber ?? job.orderId} — IMAGE READY`,
-      `APPROVE ${job.id} ${token}`,
-      `REVISE ${job.id} ${token} your feedback here`,
+      "Review the draft, then choose an option below.",
     ].join(" "),
   );
+}
+
+async function deliverReview(
+  job: ClaimedJob,
+  approvalToken: string,
+  artifactMessage: string,
+) {
+  const action = await createTelegramAction(job, approvalToken);
+  try {
+    const messageId = await sendTelegram(artifactMessage);
+    action.messageId = messageId;
+    await writeTelegramAction(action);
+    await attachTelegramDecisionButtons(action);
+  } catch (error) {
+    await rm(path.join(telegramActionRoot, `${action.actionId}.json`), {
+      force: true,
+    });
+    throw error;
+  }
+}
+
+async function createTelegramAction(
+  job: ClaimedJob,
+  approvalToken: string,
+): Promise<TelegramActionRecord> {
+  await mkdir(telegramActionRoot, { recursive: true });
+  const action: TelegramActionRecord = {
+    actionId: randomBytes(16).toString("hex"),
+    jobId: job.id,
+    approvalToken,
+    stage: job.stage,
+    orderLabel: job.orderNumber ?? job.orderId,
+    createdAt: new Date().toISOString(),
+  };
+  await writeTelegramAction(action, "wx");
+  return action;
+}
+
+async function writeTelegramAction(
+  action: TelegramActionRecord,
+  flag: "w" | "wx" = "w",
+) {
+  await writeFile(
+    path.join(telegramActionRoot, `${action.actionId}.json`),
+    `${JSON.stringify(action, null, 2)}\n`,
+    { encoding: "utf8", flag },
+  );
+}
+
+async function attachTelegramDecisionButtons(action: TelegramActionRecord) {
+  const payload = JSON.stringify({
+    actionId: action.actionId,
+    orderLabel: action.orderLabel,
+    stage: action.stage,
+    messageId: action.messageId,
+  });
+  await execFileAsync(hermesPython, [telegramButtonScript, payload], {
+    cwd: process.cwd(),
+    timeout: 45_000,
+    maxBuffer: 2 * 1024 * 1024,
+    windowsHide: true,
+  });
 }
 
 async function runHermes(instruction: string) {
@@ -202,23 +291,20 @@ async function runHermes(instruction: string) {
 }
 
 async function sendTelegram(message: string) {
-  let lastError: unknown;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      await execFileAsync("hermes", ["send", "--to", "telegram", message], {
-        cwd: process.cwd(),
-        timeout: 45_000,
-        maxBuffer: 2 * 1024 * 1024,
-        windowsHide: true,
-      });
-      return;
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("Telegram delivery failed.");
+  const { stdout } = await execFileAsync(
+    "hermes",
+    ["send", "--json", "--to", "telegram", message],
+    {
+      cwd: process.cwd(),
+      timeout: 45_000,
+      maxBuffer: 2 * 1024 * 1024,
+      windowsHide: true,
+    },
+  );
+  const result = z
+    .object({ success: z.literal(true), message_id: z.coerce.string().min(1) })
+    .parse(JSON.parse(stdout));
+  return result.message_id;
 }
 
 async function claimJob(): Promise<ClaimedJob | null> {

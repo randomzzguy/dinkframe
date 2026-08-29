@@ -16,12 +16,19 @@ DINKFRAME ChatGPT production queue.
 1. Work only in `C:\Users\hhcre\Desktop\DINKFRAME\webapp1.0`.
 2. For a queue check, run `npm run automation:run` once.
 3. If the queue is empty, report that briefly.
-4. If a prompt or image is prepared, the runner sends the artifact and its
-   one-time decision command directly to Telegram.
+4. If a prompt or image is prepared, the runner sends it to Telegram with
+   owner-only Approve, Revise, and Cancel buttons attached to that message.
 5. If it fails, report the safe error and direct the owner to Retry on the admin
    order page after resolving the cause.
 
-## Telegram decision commands
+## Telegram decisions
+
+Native decision buttons are the primary surface. Button callbacks are handled
+by the `dinkframe-telegram-platform` user plugin and never by conversational
+model inference. **Revise** captures the owner's next message as feedback;
+`/cancel` exits feedback mode and restores the card.
+
+Exact commands remain a recovery fallback:
 
 Act only when the allowed owner sends one of these exact command shapes:
 

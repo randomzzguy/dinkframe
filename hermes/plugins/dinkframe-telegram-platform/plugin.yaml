@@ -1,0 +1,10 @@
+name: dinkframe-telegram-platform
+label: DINKFRAME Telegram
+kind: platform
+version: 1.0.0
+description: Owner-only DINKFRAME review buttons layered onto the Hermes Telegram adapter.
+author: DINKFRAME
+requires_env:
+  - name: TELEGRAM_BOT_TOKEN
+    description: Existing Hermes Telegram bot token
+    password: true
