@@ -78,6 +78,12 @@ Hermes maps the command to `hermes/dinkframe-decision.py`. A casual `yes` or
 `send` without the job UUID and token cannot advance production. Tokens are
 stored remotely only as SHA-256 hashes and are cleared after use.
 
+The Hermes gateway routes these signed commands through a deterministic hook
+before the language model responds. The hook is restricted to the configured
+owner Telegram ID and accepts visual line wrapping inside the 48-character
+token, preventing a conversational acknowledgement from being mistaken for a
+real approval.
+
 ## Scheduled runner
 
 The quiet Windows wrapper is `hermes/dinkframe-production.py`. It emits nothing

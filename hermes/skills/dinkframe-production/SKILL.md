@@ -41,6 +41,12 @@ Return the script's concise result to the owner. Never alter a UUID, token, or
 feedback text. A normal conversational `yes`, `send`, or `looks good` without
 the job UUID and one-time token is not sufficient authorization.
 
+The installed gateway also has a deterministic `pre_llm_call` hook for these
+three command shapes. It validates the private Telegram sender, rejoins tokens
+that Telegram visually wrapped across lines, and runs the same decision script
+before the model replies. Never claim that a decision succeeded based only on
+the wording of the owner's message; report the hook or script result.
+
 ## Hard boundaries
 
 - Never read, print, copy, summarize, or modify `.env.local` or Hermes secrets.
