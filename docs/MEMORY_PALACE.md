@@ -63,6 +63,13 @@ Where it lives:
 
 Rule to remember: the experience should feel like `Upload → choose style → pay → done.` The wizard is mobile-first, recovers form and uploaded-file metadata locally, uses resumable private uploads for larger files, and submits through an atomic PostgreSQL function.
 
+The Events step also owns the frame narrative. `upcoming_event` keeps the
+standard tournament/date/venue brief; `congratulations` requires a 1st–6th
+placement for every entered event; `announcement` requires a message brief and
+one controlled tone. These additions do not remove the existing player,
+tournament, event, creative, upload, package, or payment requirements. The
+shared labels and values live in `lib/orders/frame-types.ts`.
+
 ## The design floor — admin production
 
 What happens: the owner confirms payment, produces the artwork, responds to amendments, delivers files, and prepares archives. Status follows those actions automatically.

@@ -1,4 +1,5 @@
 import type { UploadedAssetInput } from "./order";
+import { ANNOUNCEMENT_TONES, FRAME_TYPES } from "../orders/frame-types";
 
 export interface WizardDraftValidationInput {
   playerName: string;
@@ -8,7 +9,14 @@ export interface WizardDraftValidationInput {
   tournamentStartDate: string;
   tournamentEndDate: string;
   tournamentLocation: string;
-  events: readonly { eventName: string; partnerName: string }[];
+  frameType: string;
+  announcementMessage: string;
+  announcementTone: string;
+  events: readonly {
+    eventName: string;
+    partnerName: string;
+    placement: string;
+  }[];
   sponsors: readonly { companyName: string }[];
   colorPreference: string;
   customColor: string;
@@ -60,6 +68,13 @@ export function getOrderWizardStepError(
 
   if (
     step === 2 &&
+    !FRAME_TYPES.includes(draft.frameType as (typeof FRAME_TYPES)[number])
+  ) {
+    return "Choose a frame type.";
+  }
+
+  if (
+    step === 2 &&
     (draft.events.length < 1 ||
       draft.events.length > 12 ||
       draft.events.some(
@@ -70,6 +85,30 @@ export function getOrderWizardStepError(
       ))
   ) {
     return "Add a valid name for every event.";
+  }
+  if (
+    step === 2 &&
+    draft.frameType === "congratulations" &&
+    draft.events.some((event) => !/^[1-6]$/.test(event.placement))
+  ) {
+    return "Choose a placement from 1st to 6th for every event.";
+  }
+  if (
+    step === 2 &&
+    draft.frameType === "announcement" &&
+    (draft.announcementMessage.trim().length < 2 ||
+      draft.announcementMessage.trim().length > 500)
+  ) {
+    return "Describe the announcement in 2 to 500 characters.";
+  }
+  if (
+    step === 2 &&
+    draft.frameType === "announcement" &&
+    !ANNOUNCEMENT_TONES.includes(
+      draft.announcementTone as (typeof ANNOUNCEMENT_TONES)[number],
+    )
+  ) {
+    return "Choose an announcement tone.";
   }
 
   if (step === 3) {

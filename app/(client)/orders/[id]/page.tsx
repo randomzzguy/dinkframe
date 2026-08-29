@@ -4,6 +4,11 @@ import { notFound } from "next/navigation";
 import { AmendmentForm } from "@/components/client/amendment-form";
 import { Badge } from "@/components/ui/badge";
 import { requireUser } from "@/lib/auth/guards";
+import {
+  formatAnnouncementTone,
+  formatFrameType,
+  formatPlacement,
+} from "@/lib/orders/frame-types";
 import { ORDER_STATUS_LABELS } from "@/lib/orders/status";
 import type { OrderStatus } from "@/lib/types/domain";
 
@@ -252,6 +257,10 @@ export default async function OrderDetailsPage({
           <h2 className="font-bold">Order overview</h2>
           <dl className="mt-5 grid grid-cols-2 gap-5 text-sm">
             <Detail label="Tournament" value={order.tournament_name} />
+            <Detail
+              label="Frame type"
+              value={formatFrameType(order.frame_type)}
+            />
             <Detail label="Location" value={order.tournament_location} />
             <Detail
               label="Dates"
@@ -278,10 +287,27 @@ export default async function OrderDetailsPage({
                   {event.partner_name
                     ? ` — Partner: ${event.partner_name}`
                     : ""}
+                  {event.placement
+                    ? ` · ${formatPlacement(event.placement)}`
+                    : ""}
                 </li>
               ))}
             </ul>
           </div>
+          {order.frame_type === "announcement" &&
+            order.announcement_message && (
+              <div className="mt-6 border-t border-black/10 pt-5">
+                <h3 className="text-sm font-bold">
+                  Announcement
+                  {order.announcement_tone
+                    ? ` · ${formatAnnouncementTone(order.announcement_tone)}`
+                    : ""}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-neutral-600">
+                  {order.announcement_message}
+                </p>
+              </div>
+            )}
         </section>
 
         <section className="rounded-2xl border border-black/10 bg-white p-6">

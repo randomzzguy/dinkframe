@@ -8,6 +8,11 @@ import { PosterDeliveryUploader } from "@/components/admin/poster-delivery-uploa
 import { Badge } from "@/components/ui/badge";
 import { requireAdmin } from "@/lib/auth/guards";
 import { posterDeliveryLabel } from "@/lib/orders/delivery";
+import {
+  formatAnnouncementTone,
+  formatFrameType,
+  formatPlacement,
+} from "@/lib/orders/frame-types";
 import { ORDER_STATUS_LABELS } from "@/lib/orders/status";
 
 export default async function AdminOrderPage({
@@ -126,6 +131,10 @@ export default async function AdminOrderPage({
                 }
               />
               <Detail label="Tournament" value={order.tournament_name} />
+              <Detail
+                label="Frame type"
+                value={formatFrameType(order.frame_type)}
+              />
               <Detail label="Location" value={order.tournament_location} />
               <Detail
                 label="Dates"
@@ -152,6 +161,20 @@ export default async function AdminOrderPage({
                 <p className="mt-2 text-sm leading-6">{order.custom_notes}</p>
               </div>
             )}
+            {order.frame_type === "announcement" &&
+              order.announcement_message && (
+                <div className="mt-6 rounded-xl bg-neutral-100 p-4">
+                  <p className="text-xs font-semibold tracking-wider text-neutral-500 uppercase">
+                    Announcement ·{" "}
+                    {order.announcement_tone
+                      ? formatAnnouncementTone(order.announcement_tone)
+                      : "Tone not set"}
+                  </p>
+                  <p className="mt-2 text-sm leading-6">
+                    {order.announcement_message}
+                  </p>
+                </div>
+              )}
           </section>
 
           <section className="rounded-2xl border border-black/10 bg-white p-6">
@@ -166,6 +189,9 @@ export default async function AdminOrderPage({
                     <li key={event.id}>
                       {event.event_name}
                       {event.partner_name ? ` — ${event.partner_name}` : ""}
+                      {event.placement
+                        ? ` · ${formatPlacement(event.placement)}`
+                        : ""}
                     </li>
                   ))}
                 </ul>

@@ -14,7 +14,10 @@ const completeDraft: WizardDraftValidationInput = {
   tournamentStartDate: "2026-09-10",
   tournamentEndDate: "2026-09-12",
   tournamentLocation: "Kuala Lumpur",
-  events: [{ eventName: "Mixed Doubles", partnerName: "Alex" }],
+  frameType: "upcoming_event",
+  announcementMessage: "",
+  announcementTone: "celebratory",
+  events: [{ eventName: "Mixed Doubles", partnerName: "Alex", placement: "" }],
   sponsors: [],
   colorPreference: "surprise",
   customColor: "#d8ff36",
@@ -62,6 +65,57 @@ describe("order wizard step validation", () => {
     expect(getOrderWizardStepError(8, completeDraft, assets.slice(0, -1))).toBe(
       "Upload one payment proof.",
     );
+  });
+
+  it("requires a placement for every congratulations event", () => {
+    expect(
+      getOrderWizardStepError(
+        2,
+        { ...completeDraft, frameType: "congratulations" },
+        assets,
+      ),
+    ).toBe("Choose a placement from 1st to 6th for every event.");
+
+    expect(
+      getOrderWizardStepError(
+        2,
+        {
+          ...completeDraft,
+          frameType: "congratulations",
+          events: [
+            {
+              eventName: "Mixed Doubles",
+              partnerName: "Alex",
+              placement: "1",
+            },
+          ],
+        },
+        assets,
+      ),
+    ).toBeNull();
+  });
+
+  it("requires a message and valid tone for announcements", () => {
+    expect(
+      getOrderWizardStepError(
+        2,
+        { ...completeDraft, frameType: "announcement" },
+        assets,
+      ),
+    ).toBe("Describe the announcement in 2 to 500 characters.");
+
+    expect(
+      getOrderWizardStepError(
+        2,
+        {
+          ...completeDraft,
+          frameType: "announcement",
+          announcementMessage: "Aisyah joins Team DINKFRAME.",
+          announcementTone: "bold",
+        },
+        assets,
+      ),
+    ).toBeNull();
   });
 });
 

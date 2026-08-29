@@ -182,6 +182,15 @@ Fields:
 
 ### Step 3 — Events
 
+Start with a **Frame type** dropdown:
+
+- Upcoming event — use the standard tournament, venue, dates, and events brief.
+- Congratulations — require a 1st–6th placement for every entered event.
+- Announcement — require an announcement brief and a concise tone selection.
+
+These choices extend the existing order brief; they do not remove player,
+tournament, creative, asset, package, or payment requirements.
+
 Allow the client to add one or more events.
 
 Each event should support:

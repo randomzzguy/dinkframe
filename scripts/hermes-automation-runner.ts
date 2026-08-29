@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { copyFile, mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -11,6 +11,7 @@ import type {
   ClaimedGenerationAsset,
   GenerationJobStage,
 } from "../lib/automation/generation";
+import { calculateFourByFivePlacement } from "../lib/automation/poster-output";
 
 const execFileAsync = promisify(execFile);
 const env = z
@@ -41,6 +42,11 @@ const telegramButtonScript = path.join(
   process.cwd(),
   "hermes",
   "dinkframe-telegram-buttons.py",
+);
+const telegramMediaScript = path.join(
+  process.cwd(),
+  "hermes",
+  "dinkframe-telegram-media.py",
 );
 
 type ClaimedJob = {
@@ -182,9 +188,8 @@ async function runImageJob(
 
   const orderDirectory = path.join(durableRoot, job.orderNumber ?? job.orderId);
   await mkdir(orderDirectory, { recursive: true });
-  const extension = path.extname(generatedPath) || ".png";
-  const durablePath = path.join(orderDirectory, `${job.id}${extension}`);
-  await copyFile(generatedPath, durablePath);
+  const durablePath = path.join(orderDirectory, `${job.id}.png`);
+  await normalizePosterOutput(generatedPath, durablePath);
 
   const token = createApprovalToken();
   await updateStatus(job.id, {
@@ -195,22 +200,78 @@ async function runImageJob(
   await deliverReview(
     job,
     token,
-    [
-      `MEDIA:${durablePath.replaceAll("\\", "/")}`,
-      `DINKFRAME ${job.orderNumber ?? job.orderId} — IMAGE READY`,
-      "Review the draft, then choose an option below.",
-    ].join(" "),
+    `DINKFRAME ${job.orderNumber ?? job.orderId} — IMAGE READY\nReview the draft, then choose an option below.`,
+    durablePath,
   );
+}
+
+async function normalizePosterOutput(inputPath: string, outputPath: string) {
+  const { stdout } = await execFileAsync("ffprobe", [
+    "-v",
+    "error",
+    "-select_streams",
+    "v:0",
+    "-show_entries",
+    "stream=width,height",
+    "-of",
+    "json",
+    inputPath,
+  ]);
+  const probe = z
+    .object({
+      streams: z
+        .array(
+          z.object({
+            width: z.number().int().positive(),
+            height: z.number().int().positive(),
+          }),
+        )
+        .min(1),
+    })
+    .parse(JSON.parse(stdout));
+  const source = probe.streams[0];
+  const placement = calculateFourByFivePlacement(source.width, source.height);
+  const filter = [
+    "[0:v]split=2[bg_source][fg_source]",
+    "[bg_source]scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350,gblur=sigma=36[bg]",
+    `[fg_source]scale=${placement.width}:${placement.height}:flags=lanczos[fg]`,
+    `[bg][fg]overlay=${placement.x}:${placement.y}[out]`,
+  ].join(";");
+
+  await execFileAsync("ffmpeg", [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-y",
+    "-i",
+    inputPath,
+    "-filter_complex",
+    filter,
+    "-map",
+    "[out]",
+    "-frames:v",
+    "1",
+    outputPath,
+  ]);
+  const normalized = await stat(outputPath).catch(() => null);
+  if (!normalized?.isFile()) {
+    throw new Error(
+      "The generated poster could not be normalized to 1080 × 1350.",
+    );
+  }
 }
 
 async function deliverReview(
   job: ClaimedJob,
   approvalToken: string,
   artifactMessage: string,
+  imagePath?: string,
 ) {
   const action = await createTelegramAction(job, approvalToken);
   try {
-    const messageId = await sendTelegram(artifactMessage);
+    const messageId = imagePath
+      ? await sendTelegramPhoto(imagePath, artifactMessage)
+      : await sendTelegram(artifactMessage);
     action.messageId = messageId;
     await writeTelegramAction(action);
     await attachTelegramDecisionButtons(action);
@@ -220,6 +281,24 @@ async function deliverReview(
     });
     throw error;
   }
+}
+
+async function sendTelegramPhoto(imagePath: string, caption: string) {
+  const payload = JSON.stringify({ imagePath, caption });
+  const { stdout } = await execFileAsync(
+    hermesPython,
+    [telegramMediaScript, payload],
+    {
+      cwd: process.cwd(),
+      timeout: 45_000,
+      maxBuffer: 2 * 1024 * 1024,
+      windowsHide: true,
+    },
+  );
+  const result = z
+    .object({ success: z.literal(true), message_id: z.coerce.string().min(1) })
+    .parse(JSON.parse(stdout));
+  return result.message_id;
 }
 
 async function createTelegramAction(

@@ -27,6 +27,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  ANNOUNCEMENT_TONE_OPTIONS,
+  FRAME_TYPE_OPTIONS,
+  PLACEMENT_OPTIONS,
+  formatAnnouncementTone,
+  formatFrameType,
+  formatPlacement,
+  type AnnouncementTone,
+  type FrameType,
+} from "@/lib/orders/frame-types";
 import { removeOrderAsset, uploadOrderAsset } from "@/lib/storage/upload-draft";
 import type { AssetType } from "@/lib/types/domain";
 import type {
@@ -51,7 +61,12 @@ const storageKey = "dinkframe.order-draft.v2";
 
 type UploadableAssetType = Exclude<AssetType, "final_poster">;
 type StepIndicatorStatus = "neutral" | "complete" | "incomplete";
-type DraftEvent = { id: string; eventName: string; partnerName: string };
+type DraftEvent = {
+  id: string;
+  eventName: string;
+  partnerName: string;
+  placement: string;
+};
 type DraftSponsor = { id: string; companyName: string };
 
 type Draft = {
@@ -62,6 +77,9 @@ type Draft = {
   tournamentStartDate: string;
   tournamentEndDate: string;
   tournamentLocation: string;
+  frameType: FrameType;
+  announcementMessage: string;
+  announcementTone: AnnouncementTone;
   events: DraftEvent[];
   sponsors: DraftSponsor[];
   colorPreference: string;
@@ -115,7 +133,17 @@ function createBlankDraft(
     tournamentStartDate: "",
     tournamentEndDate: "",
     tournamentLocation: "",
-    events: [{ id: crypto.randomUUID(), eventName: "", partnerName: "" }],
+    frameType: "upcoming_event",
+    announcementMessage: "",
+    announcementTone: "celebratory",
+    events: [
+      {
+        id: crypto.randomUUID(),
+        eventName: "",
+        partnerName: "",
+        placement: "",
+      },
+    ],
     sponsors: [],
     colorPreference: "surprise",
     customColor: "#d8ff36",
@@ -197,9 +225,13 @@ export function OrderWizard({
             draftId?: string;
             assets?: UploadedAssetInput[];
           };
+          const blankDraft = createBlankDraft(packages, initialProfile);
           setDraft({
-            ...createBlankDraft(packages, initialProfile),
+            ...blankDraft,
             ...parsed.draft,
+            events: (parsed.draft?.events ?? blankDraft.events).map(
+              (event) => ({ ...event, placement: event.placement ?? "" }),
+            ),
           });
           setDraftId(parsed.draftId);
           setAssets(parsed.assets ?? []);
@@ -401,9 +433,22 @@ export function OrderWizard({
           tournamentStartDate: draft.tournamentStartDate,
           tournamentEndDate: draft.tournamentEndDate,
           tournamentLocation: draft.tournamentLocation,
+          frameType: draft.frameType,
+          announcementMessage:
+            draft.frameType === "announcement"
+              ? draft.announcementMessage
+              : undefined,
+          announcementTone:
+            draft.frameType === "announcement"
+              ? draft.announcementTone
+              : undefined,
           events: draft.events.map((event, index) => ({
             eventName: event.eventName,
             partnerName: event.partnerName || undefined,
+            placement:
+              draft.frameType === "congratulations"
+                ? Number(event.placement)
+                : undefined,
             sortOrder: index,
           })),
           sponsors: draft.sponsors
@@ -603,11 +648,77 @@ export function OrderWizard({
           )}
 
           {step === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-black/10 bg-neutral-50 p-5">
+                <SelectField
+                  label="Frame type"
+                  value={draft.frameType}
+                  onChange={(value) => update("frameType", value as FrameType)}
+                  options={FRAME_TYPE_OPTIONS.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                  }))}
+                />
+                <p className="mt-2 text-sm leading-6 text-neutral-500">
+                  {
+                    FRAME_TYPE_OPTIONS.find(
+                      (option) => option.value === draft.frameType,
+                    )?.description
+                  }
+                </p>
+              </div>
+
+              {draft.frameType === "announcement" && (
+                <div className="grid gap-5 rounded-2xl border border-black/10 p-5 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="announcement-message">
+                      What would you like to announce? *
+                    </Label>
+                    <Textarea
+                      id="announcement-message"
+                      className="mt-2"
+                      value={draft.announcementMessage}
+                      onChange={(event) =>
+                        update("announcementMessage", event.target.value)
+                      }
+                      placeholder="For example: Joining a new team, announcing a partnership, or revealing the next competition."
+                      rows={4}
+                      maxLength={500}
+                      required
+                    />
+                    <p className="mt-2 text-xs text-neutral-500">
+                      Tell us the key message and any wording that must appear.
+                    </p>
+                  </div>
+                  <SelectField
+                    label="Announcement tone"
+                    value={draft.announcementTone}
+                    onChange={(value) =>
+                      update("announcementTone", value as AnnouncementTone)
+                    }
+                    options={ANNOUNCEMENT_TONE_OPTIONS}
+                  />
+                </div>
+              )}
+
+              <div>
+                <h3 className="font-bold">Competition events</h3>
+                <p className="mt-1 text-sm text-neutral-500">
+                  Keep the player’s events here for every frame type.
+                  {draft.frameType === "congratulations"
+                    ? " Add the final placement for each event."
+                    : " Partner names remain optional."}
+                </p>
+              </div>
               {draft.events.map((event, index) => (
                 <div
                   key={event.id}
-                  className="grid gap-4 rounded-xl border border-black/10 p-4 sm:grid-cols-[1fr_1fr_auto]"
+                  className={cn(
+                    "grid gap-4 rounded-xl border border-black/10 p-4",
+                    draft.frameType === "congratulations"
+                      ? "sm:grid-cols-[1fr_1fr_11rem_auto]"
+                      : "sm:grid-cols-[1fr_1fr_auto]",
+                  )}
                 >
                   <Field
                     label={`Event ${index + 1}`}
@@ -617,6 +728,22 @@ export function OrderWizard({
                     }
                     required
                   />
+                  {draft.frameType === "congratulations" && (
+                    <SelectField
+                      label="Placement"
+                      value={event.placement}
+                      onChange={(value) =>
+                        updateEvent(draft, update, event.id, "placement", value)
+                      }
+                      options={[
+                        { value: "", label: "Select placement" },
+                        ...PLACEMENT_OPTIONS.map((placement) => ({
+                          value: String(placement),
+                          label: formatPlacement(placement),
+                        })),
+                      ]}
+                    />
+                  )}
                   <Field
                     label="Partner name"
                     value={event.partnerName}
@@ -648,7 +775,12 @@ export function OrderWizard({
                 onClick={() =>
                   update("events", [
                     ...draft.events,
-                    { id: crypto.randomUUID(), eventName: "", partnerName: "" },
+                    {
+                      id: crypto.randomUUID(),
+                      eventName: "",
+                      partnerName: "",
+                      placement: "",
+                    },
                   ])
                 }
                 disabled={draft.events.length >= 12}
@@ -998,11 +1130,25 @@ export function OrderWizard({
                 <ReviewItem label="Player" value={draft.playerName} />
                 <ReviewItem label="Tournament" value={draft.tournamentName} />
                 <ReviewItem
+                  label="Frame type"
+                  value={formatFrameType(draft.frameType)}
+                />
+                <ReviewItem
                   label="Events"
                   value={draft.events
-                    .map((event) => event.eventName)
+                    .map((event) =>
+                      draft.frameType === "congratulations" && event.placement
+                        ? `${event.eventName} — ${formatPlacement(Number(event.placement))}`
+                        : event.eventName,
+                    )
                     .join(", ")}
                 />
+                {draft.frameType === "announcement" && (
+                  <ReviewItem
+                    label="Announcement"
+                    value={`${draft.announcementMessage} · ${formatAnnouncementTone(draft.announcementTone)}`}
+                  />
+                )}
                 <ReviewItem
                   label="Package"
                   value={`${selectedPackage?.name ?? ""} · RM${selectedPackage?.priceMyr ?? ""}`}
@@ -1182,7 +1328,7 @@ function updateEvent(
   draft: Draft,
   update: <Key extends keyof Draft>(field: Key, value: Draft[Key]) => void,
   id: string,
-  field: "eventName" | "partnerName",
+  field: "eventName" | "partnerName" | "placement",
   value: string,
 ) {
   update(

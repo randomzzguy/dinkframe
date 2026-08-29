@@ -228,6 +228,9 @@ async function createSmokeOrder() {
       tournamentStartDate: "2026-09-15",
       tournamentEndDate: "2026-09-16",
       tournamentLocation: "Kuala Lumpur Test Court",
+      frameType: "upcoming_event",
+      announcementMessage: null,
+      announcementTone: null,
       packageName: selectedPackage.name,
       posterCount: selectedPackage.poster_count,
       colorPreference: "custom",
@@ -238,8 +241,16 @@ async function createSmokeOrder() {
       referenceUrl: null,
       preferredCompletionDate: "2026-09-10",
       events: [
-        { eventName: "Mixed Doubles 4.0", partnerName: "Taylor Sample" },
-        { eventName: "Men's Doubles 4.0", partnerName: "Casey Demo" },
+        {
+          eventName: "Mixed Doubles 4.0",
+          partnerName: "Taylor Sample",
+          placement: null,
+        },
+        {
+          eventName: "Men's Doubles 4.0",
+          partnerName: "Casey Demo",
+          placement: null,
+        },
       ],
       sponsors: [],
     };

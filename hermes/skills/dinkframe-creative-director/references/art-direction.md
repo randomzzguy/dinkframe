@@ -13,7 +13,9 @@ Use the selected family as a governing visual system:
 - **Minimalist:** severe hierarchy, one strong gesture, generous negative space,
   precise typography, restrained accent.
 - **Clean & Premium:** editorial grid, refined spacing, quiet dimensional light,
-  tactile but controlled materials.
+  tactile but controlled materials. Default to a light-led composition with
+  warm white or pale neutral occupying most of the canvas; use the chosen color
+  in structured panels and accents unless the client explicitly requests dark.
 - **Powerful / Athletic:** diagonal force, condensed display type, court-derived
   geometry, purposeful motion, hard contrast.
 - **Futuristic:** technical grid, synthetic depth, angular modules, precise
@@ -67,7 +69,11 @@ and one clear supporting voice. Build a designed hierarchy, not a data list.
   `2026-09-21 to 2026-09-29` may become `21—29 SEP 2026`, and `the hood kl` may
   become `THE HOOD KL`. Do not alter names, partners, or results. Treat social
   handles as private tagging metadata: exclude them from the production prompt
-  and visible artwork even when they appear in the order brief.
+  and visible artwork even when they appear in the order brief. DINKFRAME order
+  numbers are also private workflow metadata and must never become poster copy.
+- Preserve event wording character-for-character apart from casing. Do not
+  grammar-correct labels: `men singles 19+` becomes `MEN SINGLES 19+`, never
+  `MEN’S SINGLES 19+`.
 
 Quote every required string in the generation prompt and prohibit additional
 decorative copy. Add a text exclusion for every culturally inspired direction:
@@ -75,15 +81,58 @@ no unsupplied writing systems, faux glyphs, seals, stamps, or pseudo-writing. If
 text is too dense, solve it with scale, grouping, and negative space—not tiny
 type.
 
+Treat readable text already inside the protected tournament logo as visible
+copy. If it exactly supplies the tournament name, do not typeset that name a
+second time elsewhere; note this explicitly in the required-text checklist.
+
+## Frame-type storytelling
+
+- **Upcoming event:** create forward momentum and anticipation. Treat date and
+  place as meaningful campaign information, not footer metadata.
+- **Congratulations:** make the achievement unmistakable at thumbnail size.
+  Pair each exact placement with its event, then use celebratory scale, rhythm,
+  light, or material cues without inventing podiums, trophies, medals, titles,
+  records, or championship claims.
+- **Announcement:** make the announcement the central story. Convert descriptive
+  instructions into one concise headline and optional support line in the
+  selected tone. Preserve names and facts; reproduce quoted wording exactly.
+  Do not let routine event details overpower the announcement.
+
 ## Photography and protected assets
 
+- Prompt preparation receives the tournament logo only. Player photographs are
+  intentionally attached later during image generation. Always instruct image
+  mode to use those exact supplied player references; never infer that no player
+  photo exists and never request an anonymous substitute.
 - Keep the hero athlete crisp, dimensional, and dominant.
 - Preserve face, skin tone, hair, anatomy, clothing, paddle, and proportions.
 - Give secondary photographs explicit roles such as action echo, environmental
   layer, partner context, or atmospheric memory.
 - Preserve the tournament logo exactly. Its geometry may inspire the wider
   system, but never redraw, recolor, stretch, or repeatedly tile it.
+- Integrate the protected logo into an intentional editorial zone belonging to
+  the composition. Treat a flat rectangular white upload canvas as removable
+  export background unless the white shape is demonstrably part of the mark.
+  Preserve the logo artwork itself, isolate it cleanly, and place it directly on
+  a compatible field with intentional contrast. Never present it as a floating
+  white card, pasted box, or generic drop-shadow tile.
 - Leave clean, high-contrast sponsor-safe areas for manual finishing.
+
+## Location storytelling
+
+Every poster background must combine two readable layers:
+
+1. **Pickleball:** court boundaries, kitchen/service geometry, perforated-ball
+   rhythm, paddle motion, net structure, or another sport-specific mechanism.
+2. **Place:** the supplied venue, stadium, city, or country expressed through a
+   faithful reference image or recognizable architecture, skyline, landscape,
+   materials, climate, or cultural geometry.
+
+Use an exact venue or stadium likeness only when a reliable image/reference is
+supplied. When only a venue name is available, do not fabricate its appearance;
+pair pickleball structure with authentic city/country cues instead. Avoid flags
+as the sole location device, generic tourist collages, or stereotypes. Make the
+place part of depth, lighting, structure, or texture—not a detached postcard.
 
 ## Final silent review
 
@@ -97,3 +146,7 @@ Before returning a prompt, verify:
 6. The composition survives a centered 4:5 crop and leaves sponsor-safe space.
 7. Every visible character belongs to supplied copy; no faux writing, seal, or
    decorative glyph has been introduced.
+8. Every protected element survives a centered 4:5 crop with comfortable edge
+   clearance.
+9. The background visibly communicates both pickleball and the supplied place.
+10. The logo is embedded without an obvious rectangular export background.

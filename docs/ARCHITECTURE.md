@@ -45,7 +45,11 @@ Admin export route streams metadata and private assets into a ZIP → export RPC
 
 ## Naming decisions
 
-- `order_event_details` means the competitive events entered by the player.
+- `order_event_details` means the competitive events entered by the player;
+  congratulations orders also snapshot a validated 1st–6th placement per
+  event. `orders.frame_type` controls upcoming-event, congratulations, or
+  announcement prompt routing, while announcement copy and tone remain on the
+  owning order row.
 - `order_events` means the operational/audit event stream.
 - `order_status_history` is the immutable status-only timeline.
 - Monetary values use `*_myr` or snapshot names and PostgreSQL `numeric(10,2)`.

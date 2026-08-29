@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { ANNOUNCEMENT_TONES, FRAME_TYPES } from "@/lib/orders/frame-types";
+
 const ORDER_UPLOAD_ASSET_TYPES = [
   "player_photo",
   "tournament_logo",
@@ -18,6 +20,7 @@ const optionalText = (max: number) =>
 export const orderEventSchema = z.object({
   eventName: z.string().trim().min(2).max(120),
   partnerName: optionalText(120),
+  placement: z.number().int().min(1).max(6).optional(),
   sortOrder: z.number().int().min(0).max(99),
 });
 
@@ -39,6 +42,9 @@ export const orderDraftSchema = z
     tournamentStartDate: z.iso.date(),
     tournamentEndDate: z.iso.date(),
     tournamentLocation: z.string().trim().min(2).max(180),
+    frameType: z.enum(FRAME_TYPES),
+    announcementMessage: optionalText(500),
+    announcementTone: z.enum(ANNOUNCEMENT_TONES).optional(),
     events: z.array(orderEventSchema).min(1).max(12),
     sponsors: z.array(sponsorSchema).max(10).default([]),
     colorPreference: z.string().trim().min(1).max(40),
@@ -69,7 +75,37 @@ export const orderDraftSchema = z
       message: "Choose a custom color.",
       path: ["customColor"],
     },
-  );
+  )
+  .superRefine((value, context) => {
+    if (value.frameType === "congratulations") {
+      value.events.forEach((event, index) => {
+        if (!event.placement) {
+          context.addIssue({
+            code: "custom",
+            message: "Choose the player’s placement for every event.",
+            path: ["events", index, "placement"],
+          });
+        }
+      });
+    }
+
+    if (value.frameType === "announcement") {
+      if (!value.announcementMessage || value.announcementMessage.length < 2) {
+        context.addIssue({
+          code: "custom",
+          message: "Describe what you would like to announce.",
+          path: ["announcementMessage"],
+        });
+      }
+      if (!value.announcementTone) {
+        context.addIssue({
+          code: "custom",
+          message: "Choose an announcement tone.",
+          path: ["announcementTone"],
+        });
+      }
+    }
+  });
 
 export const uploadedAssetSchema = z.object({
   assetType: z.enum(ORDER_UPLOAD_ASSET_TYPES),

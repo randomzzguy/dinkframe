@@ -521,7 +521,7 @@ async function queueGenerationJob({
     supabase.from("orders").select("*").eq("id", orderId).maybeSingle(),
     supabase
       .from("order_event_details")
-      .select("event_name, partner_name")
+      .select("event_name, partner_name, placement")
       .eq("order_id", orderId)
       .order("sort_order"),
     supabase
@@ -598,6 +598,9 @@ async function queueGenerationJob({
     tournamentStartDate: order.tournament_start_date,
     tournamentEndDate: order.tournament_end_date,
     tournamentLocation: order.tournament_location,
+    frameType: order.frame_type,
+    announcementMessage: order.announcement_message,
+    announcementTone: order.announcement_tone,
     packageName: order.package_name_snapshot,
     posterCount: order.poster_count_snapshot,
     colorPreference: order.color_preference,
@@ -609,6 +612,7 @@ async function queueGenerationJob({
     events: (eventResult.data ?? []).map((event) => ({
       eventName: event.event_name,
       partnerName: event.partner_name,
+      placement: event.placement,
     })),
     sponsors: (sponsorResult.data ?? []).map((sponsor) => sponsor.company_name),
   };

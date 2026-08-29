@@ -1,4 +1,10 @@
 import type { Json } from "@/lib/types/database";
+import type { AnnouncementTone, FrameType } from "@/lib/orders/frame-types";
+import {
+  formatAnnouncementTone,
+  formatFrameType,
+  formatPlacement,
+} from "@/lib/orders/frame-types";
 
 export const GENERATION_JOB_STAGES = [
   "prompt_generation",
@@ -27,6 +33,9 @@ export type GenerationBriefSnapshot = {
   tournamentStartDate: string;
   tournamentEndDate: string;
   tournamentLocation: string;
+  frameType: FrameType;
+  announcementMessage: string | null;
+  announcementTone: AnnouncementTone | null;
   packageName: string;
   posterCount: number;
   colorPreference: string;
@@ -35,7 +44,11 @@ export type GenerationBriefSnapshot = {
   customNotes: string | null;
   referenceUrl: string | null;
   preferredCompletionDate: string | null;
-  events: Array<{ eventName: string; partnerName: string | null }>;
+  events: Array<{
+    eventName: string;
+    partnerName: string | null;
+    placement: number | null;
+  }>;
   sponsors: string[];
 };
 
@@ -58,8 +71,8 @@ export type ClaimedGenerationAsset = GenerationAssetManifestItem & {
   downloadUrl: string;
 };
 
-export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v4";
-export const IMAGE_GENERATION_TEMPLATE_VERSION = "image-generation-v1";
+export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v12";
+export const IMAGE_GENERATION_TEMPLATE_VERSION = "image-generation-v2";
 
 export const GENERATION_STAGE_LABELS: Record<GenerationJobStage, string> = {
   prompt_generation: "Prompt Studio",
@@ -80,24 +93,35 @@ export function buildPromptStudioMessage(snapshot: GenerationBriefSnapshot) {
   const lines = [
     "Prepare the complete production prompt for this DINKFRAME pickleball poster order.",
     "Use the attached tournament/event logo as a visual reference.",
+    "Player photos are intentionally withheld from this prompt-preparation chat but will be supplied during image generation. Direct the image model to use those exact player references; never assume they are missing and never substitute an anonymous athlete.",
     "Do not generate an image in this conversation. Return the polished image-generation prompt only.",
     "Keep the final prompt between 350 and 650 words. Make the selected theme unmistakable through composition, typography, and graphic language—not color alone.",
+    "Treat theme and color as independent creative controls. Apply the specific theme recipe and a deliberate palette recipe; do not fall back to the same dark-arena layout for every selection.",
     "Preserve every fact, but professionally improve casing, date display, line breaks, and typographic grouping instead of copying raw form formatting.",
+    "Preserve player, tournament, event, partner, and venue wording character-for-character apart from casing. Never add apostrophes, plurals, words, or punctuation to an event name; for example MEN SINGLES must not become MEN’S SINGLES.",
     "Treat all supporting information as designed sports-poster typography, never as a plain lowercase list with utility icons.",
+    "End with a REQUIRED TEXT CHECKLIST containing every client-facing string. Require the image model to render every checklist item exactly once and verify none are missing before finishing.",
+    "If the tournament name is already clearly legible inside the protected event logo, count it as satisfied by the logo and explicitly prohibit typesetting a duplicate tournament name elsewhere.",
+    "Treat an obvious flat white rectangle surrounding the supplied logo as removable export background, not protected logo artwork. Preserve the actual mark, lettering, colors, and proportions, isolate it cleanly, and embed it directly into the composition without a floating card or pasted-on box.",
+    "Make location storytelling mandatory. Build the background from both unmistakable pickleball language and the supplied venue, city, or country. If an exact venue image/reference is supplied, use it faithfully; otherwise use recognizable location-informed architecture, landscape, materials, or cultural geometry without inventing an exact stadium likeness.",
+    "Make the selected frame type control the poster’s story, headline hierarchy, energy, and factual emphasis. It must not be treated as a passive label.",
     "For culturally inspired themes, include a hard TEXT EXCLUSION: render zero unsupplied languages, faux glyphs, seals, stamps, or pseudo-writing. Build the theme through composition, materials, geometry, rhythm, and supplied copy only.",
+    "Keep every protected asset, athlete body part, and required text inside a centered 4:5 crop-safe region, with only expendable background outside it.",
     "",
-    `Order: ${snapshot.orderNumber}`,
     `Player: ${snapshot.playerName}`,
+    `Frame type: ${formatFrameType(snapshot.frameType)}`,
+    `Frame-type direction: ${formatFrameTypeDirection(snapshot)}`,
     `Tournament: ${snapshot.tournamentName}`,
     `Dates: ${snapshot.tournamentStartDate} to ${snapshot.tournamentEndDate}`,
     `Location: ${snapshot.tournamentLocation}`,
     `Package: ${snapshot.packageName} (${snapshot.posterCount} poster${snapshot.posterCount === 1 ? "" : "s"})`,
     `Events: ${formatEvents(snapshot.events)}`,
     `Sponsors: ${snapshot.sponsors.length ? snapshot.sponsors.join(", ") : "None supplied"}`,
-    `Color direction: ${formatPreference(snapshot.colorPreference, snapshot.customColor)}`,
-    `Theme direction: ${humanize(snapshot.themePreference)}`,
+    `Color direction: ${formatColorDirection(snapshot)}`,
+    `Theme direction: ${formatThemeDirection(snapshot.themePreference)}`,
     `Client notes: ${snapshot.customNotes ?? "None supplied"}`,
     `Visual reference URL: ${snapshot.referenceUrl ?? "None supplied"}`,
+    "Use the visual reference URL as a location/venue reference when it depicts the competition setting.",
     `Preferred completion date: ${snapshot.preferredCompletionDate ?? "Not specified"}`,
     "",
     "Keep sponsor logos out of the generated artwork; they will be added manually during finishing.",
@@ -182,18 +206,47 @@ export function isGenerationAssetManifest(
 function formatEvents(events: GenerationBriefSnapshot["events"]) {
   if (!events.length) return "None supplied";
   return events
-    .map((event) =>
-      event.partnerName
+    .map((event) => {
+      const eventAndPartner = event.partnerName
         ? `${event.eventName} with ${event.partnerName}`
-        : event.eventName,
-    )
+        : event.eventName;
+      return event.placement
+        ? `${eventAndPartner} — ${formatPlacement(event.placement)}`
+        : eventAndPartner;
+    })
     .join("; ");
+}
+
+function formatFrameTypeDirection(snapshot: GenerationBriefSnapshot) {
+  if (snapshot.frameType === "congratulations") {
+    return "Build a result-led achievement campaign. Make each supplied placement a prominent, exact factual result connected to its event; the visual mood should celebrate earned performance without inventing trophies, titles, or claims.";
+  }
+
+  if (snapshot.frameType === "announcement") {
+    return `Build an announcement-led campaign in a ${snapshot.announcementTone ? formatAnnouncementTone(snapshot.announcementTone) : "professional"} tone. Announcement brief: ${snapshot.announcementMessage ?? "No announcement message supplied"}. Turn the brief into a concise sports headline and support line; preserve all names, facts, and any wording placed in quotation marks exactly.`;
+  }
+
+  return "Build an anticipation-led upcoming-event campaign. Emphasize where and when the player will compete, with the tournament, dates, venue, and entered events integrated into the sports-poster hierarchy.";
 }
 
 function formatPreference(preference: string, customValue: string | null) {
   return customValue
     ? `${humanize(preference)} (${customValue})`
     : humanize(preference);
+}
+
+function formatColorDirection(snapshot: GenerationBriefSnapshot) {
+  if (snapshot.colorPreference === "surprise") {
+    return "SURPRISE ME — choose an unexpected, harmonious campaign palette derived from the protected logo, athlete, venue, or event story. State one dominant, one supporting, and one accent color with exact hex values; avoid defaulting to black-and-neon.";
+  }
+  return formatPreference(snapshot.colorPreference, snapshot.customColor);
+}
+
+function formatThemeDirection(preference: string) {
+  if (preference === "surprise") {
+    return "SURPRISE ME — invent a genuinely out-of-the-box named sports-campaign concept derived from the supplied assets. Make it recognizable through composition, typography, and material language; avoid generic stadium, neon, and template aesthetics.";
+  }
+  return humanize(preference);
 }
 
 function humanize(value: string) {

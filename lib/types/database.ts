@@ -98,6 +98,17 @@ export type Database = {
           tournament_start_date: string;
           tournament_end_date: string;
           tournament_location: string;
+          frame_type: "upcoming_event" | "congratulations" | "announcement";
+          announcement_message: string | null;
+          announcement_tone:
+            | "celebratory"
+            | "exciting"
+            | "competitive"
+            | "inspirational"
+            | "professional"
+            | "warm"
+            | "bold"
+            | null;
           package_id: string;
           package_name_snapshot: string;
           package_price_snapshot: number;
@@ -135,6 +146,20 @@ export type Database = {
           tournament_start_date: string;
           tournament_end_date: string;
           tournament_location: string;
+          frame_type?:
+            | "upcoming_event"
+            | "congratulations"
+            | "announcement";
+          announcement_message?: string | null;
+          announcement_tone?:
+            | "celebratory"
+            | "exciting"
+            | "competitive"
+            | "inspirational"
+            | "professional"
+            | "warm"
+            | "bold"
+            | null;
           package_id: string;
           package_name_snapshot: string;
           package_price_snapshot: number;
@@ -190,6 +215,7 @@ export type Database = {
           order_id: string;
           event_name: string;
           partner_name: string | null;
+          placement: number | null;
           sort_order: number;
           created_at: string;
         };
@@ -198,6 +224,7 @@ export type Database = {
           order_id: string;
           event_name: string;
           partner_name?: string | null;
+          placement?: number | null;
           sort_order?: number;
           created_at?: string;
         };
