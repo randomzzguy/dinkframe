@@ -106,7 +106,7 @@ async function main() {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown Hermes runner failure";
-    if (job) {
+    if (job && !(error instanceof ReviewDeliveryError)) {
       await updateStatus(job.id, { status: "failed", error: message }).catch(
         () => undefined,
       );
@@ -270,21 +270,24 @@ async function deliverReview(
   const action = await createTelegramAction(job, approvalToken);
   try {
     const messageId = imagePath
-      ? await sendTelegramPhoto(imagePath, artifactMessage)
+      ? await sendTelegramPhoto(imagePath, artifactMessage, action.actionId)
       : await sendTelegram(artifactMessage);
     action.messageId = messageId;
     await writeTelegramAction(action);
-    await attachTelegramDecisionButtons(action);
+    if (!imagePath) await attachTelegramDecisionButtons(action);
   } catch (error) {
-    await rm(path.join(telegramActionRoot, `${action.actionId}.json`), {
-      force: true,
-    });
-    throw error;
+    throw new ReviewDeliveryError(
+      error instanceof Error ? error.message : "Telegram delivery failed.",
+    );
   }
 }
 
-async function sendTelegramPhoto(imagePath: string, caption: string) {
-  const payload = JSON.stringify({ imagePath, caption });
+async function sendTelegramPhoto(
+  imagePath: string,
+  caption: string,
+  actionId: string,
+) {
+  const payload = JSON.stringify({ imagePath, caption, actionId });
   const { stdout } = await execFileAsync(
     hermesPython,
     [telegramMediaScript, payload],
@@ -299,6 +302,15 @@ async function sendTelegramPhoto(imagePath: string, caption: string) {
     .object({ success: z.literal(true), message_id: z.coerce.string().min(1) })
     .parse(JSON.parse(stdout));
   return result.message_id;
+}
+
+class ReviewDeliveryError extends Error {
+  constructor(message: string) {
+    super(
+      `The review output is ready, but Telegram delivery was uncertain: ${message}`,
+    );
+    this.name = "ReviewDeliveryError";
+  }
 }
 
 async function createTelegramAction(
