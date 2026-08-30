@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getSharedAuthCookieOptions } from "@/lib/auth/cookies";
 import type { Database } from "@/lib/types/database";
 
 export async function updateSession(request: NextRequest) {
@@ -12,8 +13,10 @@ export async function updateSession(request: NextRequest) {
   }
 
   let response = NextResponse.next({ request });
+  const cookieOptions = getSharedAuthCookieOptions(request.nextUrl.hostname);
 
   const supabase = createServerClient<Database>(supabaseUrl, supabaseKey, {
+    cookieOptions,
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -24,7 +27,10 @@ export async function updateSession(request: NextRequest) {
         );
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options),
+          response.cookies.set(name, value, {
+            ...options,
+            ...cookieOptions,
+          }),
         );
       },
     },

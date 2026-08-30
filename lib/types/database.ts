@@ -132,6 +132,7 @@ export type Database = {
           archived_at: string | null;
           exported_at: string | null;
           archive_verified_at: string | null;
+          frame_entitlement_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -146,10 +147,7 @@ export type Database = {
           tournament_start_date: string;
           tournament_end_date: string;
           tournament_location: string;
-          frame_type?:
-            | "upcoming_event"
-            | "congratulations"
-            | "announcement";
+          frame_type?: "upcoming_event" | "congratulations" | "announcement";
           announcement_message?: string | null;
           announcement_tone?:
             | "celebratory"
@@ -183,10 +181,69 @@ export type Database = {
           archived_at?: string | null;
           exported_at?: string | null;
           archive_verified_at?: string | null;
+          frame_entitlement_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["orders"]["Insert"]>;
+        Relationships: [];
+      };
+      frame_entitlements: {
+        Row: {
+          id: string;
+          client_id: string;
+          source_order_id: string | null;
+          package_id: string;
+          package_name_snapshot: string;
+          frames_total: number;
+          frames_used: number;
+          amendments_total: number;
+          amendments_used: number;
+          activated_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          client_id: string;
+          source_order_id: string;
+          package_id: string;
+          package_name_snapshot: string;
+          frames_total: number;
+          frames_used?: number;
+          amendments_total: number;
+          amendments_used?: number;
+          activated_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["frame_entitlements"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      frame_entitlement_ledger: {
+        Row: {
+          id: string;
+          entitlement_id: string;
+          order_id: string | null;
+          entry_kind: Database["public"]["Enums"]["frame_entitlement_entry_kind"];
+          frame_delta: number;
+          amendment_delta: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          entitlement_id: string;
+          order_id?: string | null;
+          entry_kind: Database["public"]["Enums"]["frame_entitlement_entry_kind"];
+          frame_delta?: number;
+          amendment_delta?: number;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["frame_entitlement_ledger"]["Insert"]
+        >;
         Relationships: [];
       };
       order_drafts: {
@@ -651,6 +708,8 @@ export type Database = {
         | "review_draft_ready"
         | "final_poster_ready";
       order_notification_status: "sending" | "sent" | "failed";
+      frame_entitlement_entry_kind:
+        "package_granted" | "frame_used" | "amendment_used";
     };
     CompositeTypes: Record<never, never>;
   };

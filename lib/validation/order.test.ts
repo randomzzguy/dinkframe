@@ -1,68 +1,62 @@
 import { describe, expect, it } from "vitest";
 
-import { orderDraftSchema } from "./order";
+import { orderDraftSchema, orderSubmissionSchema } from "./order";
 
-const baseOrder = {
+const draftId = "00000000-0000-4000-8000-000000000000";
+const entitlementId = "00000000-0000-4000-8000-000000000001";
+
+const order = {
   playerName: "Jamie Lee",
-  instagramHandle: "@jamie",
   whatsapp: "+60123456789",
   tournamentName: "Kuala Lumpur Open",
   tournamentStartDate: "2026-09-10",
   tournamentEndDate: "2026-09-12",
   tournamentLocation: "Kuala Lumpur",
   frameType: "upcoming_event" as const,
-  announcementMessage: undefined,
-  announcementTone: undefined,
-  events: [
-    {
-      eventName: "Mixed Doubles",
-      partnerName: "Alex",
-      placement: undefined,
-      sortOrder: 0,
-    },
-  ],
+  events: [{ eventName: "Mixed Doubles", sortOrder: 0 }],
   sponsors: [],
-  colorPreference: "surprise",
-  customColor: undefined,
-  themePreference: "surprise",
-  customNotes: undefined,
-  referenceUrl: undefined,
-  preferredCompletionDate: undefined,
-  packageSlug: "single-frame",
+  colorPreference: "orange",
+  themePreference: "futuristic",
+  packageSlug: "duo-frame",
   confirmedAccurate: true as const,
 };
 
+const standardAssets = [
+  asset("player_photo", "order-assets", "player-a.png"),
+  asset("player_photo", "order-assets", "player-b.png"),
+  asset("tournament_logo", "order-assets", "logo.png"),
+  asset("payment_proof", "payment-proofs", "receipt.png"),
+];
+
 describe("order draft validation", () => {
   it("accepts the existing upcoming-event brief", () => {
-    expect(orderDraftSchema.safeParse(baseOrder).success).toBe(true);
+    expect(orderDraftSchema.safeParse(order).success).toBe(true);
   });
 
   it("requires a placement for each congratulations event", () => {
-    const missingPlacement = orderDraftSchema.safeParse({
-      ...baseOrder,
-      frameType: "congratulations",
-    });
-    expect(missingPlacement.success).toBe(false);
-
-    const complete = orderDraftSchema.safeParse({
-      ...baseOrder,
-      frameType: "congratulations",
-      events: [{ ...baseOrder.events[0], placement: 1 }],
-    });
-    expect(complete.success).toBe(true);
+    expect(
+      orderDraftSchema.safeParse({
+        ...order,
+        frameType: "congratulations",
+      }).success,
+    ).toBe(false);
+    expect(
+      orderDraftSchema.safeParse({
+        ...order,
+        frameType: "congratulations",
+        events: [{ ...order.events[0], placement: 1 }],
+      }).success,
+    ).toBe(true);
   });
 
   it("requires an announcement message and tone together", () => {
     expect(
-      orderDraftSchema.safeParse({
-        ...baseOrder,
-        frameType: "announcement",
-      }).success,
+      orderDraftSchema.safeParse({ ...order, frameType: "announcement" })
+        .success,
     ).toBe(false);
-
     expect(
       orderDraftSchema.safeParse({
-        ...baseOrder,
+        ...order,
         frameType: "announcement",
         announcementMessage: "Jamie joins Team DINKFRAME.",
         announcementTone: "bold",
@@ -70,3 +64,47 @@ describe("order draft validation", () => {
     ).toBe(true);
   });
 });
+
+describe("order submission payment validation", () => {
+  it("requires a receipt for a new package purchase", () => {
+    const result = orderSubmissionSchema.safeParse({
+      draftId,
+      order,
+      assets: standardAssets.slice(0, -1),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts no receipt for a frame credit and rejects an extra receipt", () => {
+    const creditOrder = { ...order, frameEntitlementId: entitlementId };
+    expect(
+      orderSubmissionSchema.safeParse({
+        draftId,
+        order: creditOrder,
+        assets: standardAssets.slice(0, -1),
+      }).success,
+    ).toBe(true);
+    expect(
+      orderSubmissionSchema.safeParse({
+        draftId,
+        order: creditOrder,
+        assets: standardAssets,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+function asset(
+  assetType: "player_photo" | "tournament_logo" | "payment_proof",
+  bucketId: "order-assets" | "payment-proofs",
+  filename: string,
+) {
+  return {
+    assetType,
+    bucketId,
+    storagePath: `orders/${draftId}/${filename}`,
+    originalFilename: filename,
+    mimeType: "image/png",
+    fileSize: 1024,
+  };
+}

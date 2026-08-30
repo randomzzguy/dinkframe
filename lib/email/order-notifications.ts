@@ -28,7 +28,9 @@ export async function sendOrderNotification(
   const supabase = createServiceRoleClient();
   const { data: order, error: orderError } = await supabase
     .from("orders")
-    .select("id, order_number, client_id, player_name, tournament_name")
+    .select(
+      "id, order_number, client_id, player_name, tournament_name, package_price_snapshot",
+    )
     .eq("id", orderId)
     .maybeSingle();
   if (orderError || !order) {
@@ -85,6 +87,7 @@ export async function sendOrderNotification(
     tournamentName: order.tournament_name,
     orderUrl: loginUrl.toString(),
     logoUrl: new URL("/upscaledlogo.png", env.NEXT_PUBLIC_SITE_URL).toString(),
+    usedFrameCredit: Number(order.package_price_snapshot) === 0,
   });
 
   try {

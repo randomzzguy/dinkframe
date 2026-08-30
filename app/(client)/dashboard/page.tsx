@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Layers3, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
 import { OrderCard } from "@/components/client/order-card";
@@ -8,17 +8,42 @@ import { cn } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const { claims, supabase } = await requireUser();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", claims.sub)
-    .maybeSingle();
-  const { data: orders } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("client_id", claims.sub)
-    .neq("status", "archived")
-    .order("created_at", { ascending: false });
+  const [profileResult, orderResult, entitlementResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", claims.sub)
+      .maybeSingle(),
+    supabase
+      .from("orders")
+      .select("*")
+      .eq("client_id", claims.sub)
+      .neq("status", "archived")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("frame_entitlements")
+      .select(
+        "frames_total, frames_used, amendments_total, amendments_used, activated_at",
+      )
+      .eq("client_id", claims.sub),
+  ]);
+  const profile = profileResult.data;
+  const orders = orderResult.data;
+  const activeEntitlements = (entitlementResult.data ?? []).filter(
+    (item) => item.activated_at,
+  );
+  const framesRemaining = activeEntitlements.reduce(
+    (total, item) => total + Math.max(0, item.frames_total - item.frames_used),
+    0,
+  );
+  const amendmentsRemaining = activeEntitlements.reduce(
+    (total, item) =>
+      total + Math.max(0, item.amendments_total - item.amendments_used),
+    0,
+  );
+  const pendingPackages = (entitlementResult.data ?? []).filter(
+    (item) => !item.activated_at,
+  ).length;
   const firstName = profile?.full_name?.trim().split(/\s+/)[0] || "Player";
 
   return (
@@ -40,6 +65,48 @@ export default async function DashboardPage() {
           <Plus /> Create new order
         </Link>
       </div>
+      <section className="mt-8 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-3xl border border-lime-300 bg-lime-50 p-5">
+          <div className="flex items-center gap-3">
+            <span className="bg-primary grid size-10 place-items-center rounded-2xl">
+              <Layers3 className="size-5" />
+            </span>
+            <div>
+              <p className="text-xs font-bold tracking-wider text-lime-800 uppercase">
+                Frames available
+              </p>
+              <p className="font-heading text-3xl font-black">
+                {framesRemaining}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-lime-950/65">
+            Use these for new poster briefs without paying or uploading another
+            receipt.
+          </p>
+        </div>
+        <div className="rounded-3xl border border-black/10 bg-white p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 place-items-center rounded-2xl bg-neutral-100">
+              <RefreshCw className="size-5" />
+            </span>
+            <div>
+              <p className="text-xs font-bold tracking-wider text-neutral-500 uppercase">
+                Amendments available
+              </p>
+              <p className="font-heading text-3xl font-black">
+                {amendmentsRemaining}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-neutral-500">
+            Shared across every frame in your activated packages.
+            {pendingPackages > 0
+              ? ` ${pendingPackages} package${pendingPackages === 1 ? " is" : "s are"} awaiting payment confirmation.`
+              : ""}
+          </p>
+        </div>
+      </section>
       <div className="mt-10 grid gap-4 lg:grid-cols-2">
         {orders?.length ? (
           orders.map((order) => <OrderCard key={order.id} order={order} />)

@@ -29,6 +29,14 @@ export default async function AdminOrderPage({
     .maybeSingle();
   if (!order) notFound();
 
+  const { data: entitlement } = order.frame_entitlement_id
+    ? await supabase
+        .from("frame_entitlements")
+        .select("frames_total, frames_used, amendments_total, amendments_used")
+        .eq("id", order.frame_entitlement_id)
+        .maybeSingle()
+    : { data: null };
+
   const [
     profileResult,
     eventResult,
@@ -94,7 +102,9 @@ export default async function AdminOrderPage({
   const profile = profileResult.data;
   const freeRemaining = Math.max(
     0,
-    order.free_amendments_total - order.free_amendments_used,
+    entitlement
+      ? entitlement.amendments_total - entitlement.amendments_used
+      : order.free_amendments_total - order.free_amendments_used,
   );
 
   return (
@@ -150,8 +160,14 @@ export default async function AdminOrderPage({
               />
               <Detail
                 label="Free amendments"
-                value={`${freeRemaining} remaining of ${order.free_amendments_total}`}
+                value={`${freeRemaining} remaining of ${entitlement?.amendments_total ?? order.free_amendments_total}`}
               />
+              {entitlement && (
+                <Detail
+                  label="Package frames"
+                  value={`${Math.max(0, entitlement.frames_total - entitlement.frames_used)} remaining of ${entitlement.frames_total}`}
+                />
+              )}
             </dl>
             {order.custom_notes && (
               <div className="mt-6 rounded-xl bg-neutral-100 p-4">

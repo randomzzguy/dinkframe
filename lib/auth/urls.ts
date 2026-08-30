@@ -4,6 +4,10 @@ export function getAppLoginUrl() {
   return new URL("/login", getPublicEnv().NEXT_PUBLIC_APP_URL).toString();
 }
 
+export function getAppDashboardUrl() {
+  return new URL("/dashboard", getPublicEnv().NEXT_PUBLIC_APP_URL).toString();
+}
+
 export function getSafeNextPath(
   value: string | string[] | null | undefined,
   fallback = "/dashboard",

@@ -67,6 +67,23 @@ describe("order wizard step validation", () => {
     );
   });
 
+  it("accepts an owned frame credit without another payment proof", () => {
+    const creditDraft = {
+      ...completeDraft,
+      frameEntitlementId: "00000000-0000-4000-8000-000000000001",
+    };
+    const assetsWithoutReceipt = assets.filter(
+      (item) => item.assetType !== "payment_proof",
+    );
+
+    expect(
+      getOrderWizardStepError(7, creditDraft, assetsWithoutReceipt),
+    ).toBeNull();
+    expect(
+      getOrderWizardStepError(8, creditDraft, assetsWithoutReceipt),
+    ).toBeNull();
+  });
+
   it("requires a placement for every congratulations event", () => {
     expect(
       getOrderWizardStepError(

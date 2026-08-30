@@ -61,7 +61,7 @@ Where it lives:
 - Validation: `lib/validation/order.ts`
 - Upload policy constants: `lib/storage/constants.ts`
 
-Rule to remember: the experience should feel like `Upload → choose style → pay → done.` The wizard is mobile-first, recovers form and uploaded-file metadata locally, uses resumable private uploads for larger files, and submits through an atomic PostgreSQL function.
+Rule to remember: the first frame should feel like `Upload → choose style → pay → done.` A confirmed multi-frame package then becomes `Upload → choose style → use frame credit → done`, with no duplicate receipt. The wizard is mobile-first, recovers form and uploaded-file metadata locally, uses resumable private uploads for larger files, and submits through an atomic PostgreSQL function.
 
 The Events step also owns the frame narrative. `upcoming_event` keeps the
 standard tournament/date/venue brief; `congratulations` requires a 1st–6th
@@ -117,7 +117,7 @@ Rule to remember: uploading proof does not confirm payment. The owner confirms i
 
 What it holds:
 
-- Postgres: profiles, order metadata, package snapshots, events, amendments, automation settings, generation jobs, notification receipts, and audit records
+- Postgres: profiles, order metadata, package snapshots, frame entitlements and their append-only usage ledger, events, amendments, automation settings, generation jobs, notification receipts, and audit records
 - Private Storage: original creative assets and payment proofs
 
 Where it lives:
@@ -125,6 +125,7 @@ Where it lives:
 - Schema/RLS: `supabase/migrations/202608260001_foundation.sql`
 - Buckets/policies: `supabase/migrations/202608260002_storage.sql`
 - Submission workflow: `supabase/migrations/202608260003_order_workflow.sql`
+- Protected multi-frame wallet: `supabase/migrations/202608300002_frame_entitlements.sql`
 - Archive safeguards: `supabase/migrations/202608260004_archive_and_settings.sql`
 - Type contract: `lib/types/database.ts`
 - Runner endpoints: `app/api/automation/jobs`
@@ -133,13 +134,13 @@ Rule to remember: files never live in Postgres. A client must not read another c
 
 ## The amendment counter — commercial rules
 
-Package allowances are 2, 4, 6, and 10 free amendments. Once consumed, each additional amendment is RM10 and must be manually confirmed.
+Package allowances are 2, 4, 6, and 10 free amendments. The allowance belongs to the package purchase and is shared across every frame created from it. Once consumed, each additional amendment is RM10 and must be manually confirmed.
 
 Where it lives:
 
 - Pure calculations: `lib/orders/amendments.ts`
-- Transaction and row lock: `public.submit_amendment` in the first migration
-- Package source: `packages` table, snapshotted onto `orders`
+- Transaction and row lock: current `public.submit_amendment` in the frame-entitlement migration
+- Package source: `packages` table, snapshotted into `frame_entitlements` and linked orders
 
 Rule to remember: counters, billing classification, and snapshots are server-owned. Never trust a client calculation.
 
@@ -167,6 +168,6 @@ If any of these turn red, stop and fix the foundation before adding features:
 
 ## Current build marker
 
-Local MVP foundation complete: project configuration, all route surfaces, public site, magic-link session plumbing, guarded layouts, editable repeat-client profiles, durable draft IDs, resumable private uploads, atomic order submission, signed asset views, client amendments, a searchable admin queue, action-driven production statuses, four idempotent order emails, payment settings and QR management, an order-linked concise creative-director pipeline with theme/typography quality gates, hashed approvals, native owner-only Telegram decision buttons, revision feedback interception, and owner-local image capture, private review/final poster publication and client downloads, streaming ZIP exports, verified archive/delete controls, typed domain logic, tests, schema, seeds, RLS, and private buckets.
+Local MVP foundation complete: project configuration, all route surfaces, public site with cross-subdomain signed-in identity, magic-link session plumbing, guarded layouts, editable repeat-client profiles, durable draft IDs, resumable private uploads, atomic order submission, server-owned multi-frame credits and shared amendment allowances, signed asset views, client amendments, a searchable admin queue, action-driven production statuses, four idempotent order emails, payment settings and QR management, an order-linked concise creative-director pipeline with theme/typography quality gates, hashed approvals, native owner-only Telegram decision buttons, revision feedback interception, and owner-local image capture, private review/final poster publication and client downloads, streaming ZIP exports, verified archive/delete controls, typed domain logic, tests, schema, seeds, RLS, and private buckets.
 
 Next slice: configure the Resend sending key and run one full client/admin lifecycle smoke test.

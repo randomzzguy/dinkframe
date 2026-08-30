@@ -15,6 +15,7 @@ type NotificationContentInput = {
   tournamentName: string;
   orderUrl: string;
   logoUrl: string;
+  usedFrameCredit?: boolean;
 };
 
 const copy: Record<
@@ -61,7 +62,13 @@ const copy: Record<
 };
 
 export function renderOrderNotification(input: NotificationContentInput) {
-  const content = copy[input.kind];
+  const content =
+    input.kind === "submission_received" && input.usedFrameCredit
+      ? {
+          ...copy.submission_received,
+          body: "We have received your new poster brief and applied one of your existing frame credits. No new payment receipt is needed, and production has started.",
+        }
+      : copy[input.kind];
   const clientName = escapeHtml(input.clientName || "there");
   const orderNumber = escapeHtml(input.orderNumber);
   const playerName = escapeHtml(input.playerName);

@@ -33,4 +33,14 @@ describe("order notification content", () => {
     expect(result.html).not.toContain("<script>alert(1)</script>");
     expect(result.html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
   });
+
+  it("does not ask for another receipt when an existing frame credit was used", () => {
+    const result = renderOrderNotification({
+      ...input,
+      kind: "submission_received",
+      usedFrameCredit: true,
+    });
+    expect(result.text).toContain("existing frame credits");
+    expect(result.text).toContain("No new payment receipt is needed");
+  });
 });

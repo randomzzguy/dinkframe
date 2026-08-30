@@ -115,6 +115,10 @@ function friendlySubmissionError(message: string): string {
   const safeMessages = [
     "Order draft not found",
     "Selected package is unavailable",
+    "Frame credit is invalid",
+    "Frame credit is unavailable",
+    "No frame credits remain",
+    "Frame credit package is unavailable",
     "Required order information is incomplete",
     "Frame type information is invalid",
     "Announcement details are incomplete",
@@ -124,6 +128,7 @@ function friendlySubmissionError(message: string): string {
     "Sponsor information is invalid",
     "Upload between two and eight player photos",
     "Exactly one payment proof is required",
+    "Payment proof does not match the selected payment method",
     "Exactly one tournament logo is required",
     "Upload no more than ten sponsor logos",
     "One or more uploaded assets could not be verified",

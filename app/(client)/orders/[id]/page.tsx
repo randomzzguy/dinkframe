@@ -59,6 +59,13 @@ export default async function OrderDetailsPage({
 
   const order = orderResult.data;
   if (!order) notFound();
+  const { data: entitlement } = order.frame_entitlement_id
+    ? await supabase
+        .from("frame_entitlements")
+        .select("frames_total, frames_used, amendments_total, amendments_used")
+        .eq("id", order.frame_entitlement_id)
+        .maybeSingle()
+    : { data: null };
 
   const signedAssets = await Promise.all(
     (assetResult.data ?? []).map(async (asset) => {
@@ -90,7 +97,9 @@ export default async function OrderDetailsPage({
       : timeline.findIndex((item) => item.status === order.status);
   const freeRemaining = Math.max(
     0,
-    order.free_amendments_total - order.free_amendments_used,
+    entitlement
+      ? entitlement.amendments_total - entitlement.amendments_used
+      : order.free_amendments_total - order.free_amendments_used,
   );
 
   return (
@@ -99,7 +108,9 @@ export default async function OrderDetailsPage({
         <div className="mb-7 rounded-xl border border-lime-300 bg-lime-50 p-5 text-lime-950">
           <p className="font-bold">Order received — {order.order_number}</p>
           <p className="mt-1 text-sm">
-            We&apos;ll review your submission and payment shortly.
+            {Number(order.package_price_snapshot) === 0
+              ? "Your frame credit was applied and production has started."
+              : "We'll review your submission and payment shortly."}
           </p>
         </div>
       )}
@@ -113,6 +124,33 @@ export default async function OrderDetailsPage({
         </div>
         <Badge variant="secondary">{ORDER_STATUS_LABELS[order.status]}</Badge>
       </div>
+
+      {entitlement && (
+        <section className="mt-6 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-lime-300 bg-lime-50 px-5 py-4">
+            <p className="text-xs font-bold tracking-wider text-lime-800 uppercase">
+              Package frames left
+            </p>
+            <p className="font-heading mt-1 text-2xl font-black">
+              {Math.max(0, entitlement.frames_total - entitlement.frames_used)}
+              <span className="ml-1 text-sm font-medium text-lime-900/60">
+                of {entitlement.frames_total}
+              </span>
+            </p>
+          </div>
+          <div className="rounded-2xl border border-black/10 bg-white px-5 py-4">
+            <p className="text-xs font-bold tracking-wider text-neutral-500 uppercase">
+              Shared amendments left
+            </p>
+            <p className="font-heading mt-1 text-2xl font-black">
+              {freeRemaining}
+              <span className="ml-1 text-sm font-medium text-neutral-500">
+                of {entitlement.amendments_total}
+              </span>
+            </p>
+          </div>
+        </section>
+      )}
 
       {order.status === "cancelled" ? (
         <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">

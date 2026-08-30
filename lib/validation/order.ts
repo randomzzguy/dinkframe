@@ -63,6 +63,7 @@ export const orderDraftSchema = z
       .transform((value) => value || undefined)
       .optional(),
     packageSlug: z.string().trim().min(1).max(80),
+    frameEntitlementId: z.uuid().optional(),
     confirmedAccurate: z.literal(true),
   })
   .refine((value) => value.tournamentEndDate >= value.tournamentStartDate, {
@@ -144,10 +145,13 @@ export const orderSubmissionSchema = z
       });
     }
 
-    if (paymentProofCount !== 1) {
+    const expectedPaymentProofCount = value.order.frameEntitlementId ? 0 : 1;
+    if (paymentProofCount !== expectedPaymentProofCount) {
       context.addIssue({
         code: "custom",
-        message: "Upload exactly one payment proof.",
+        message: value.order.frameEntitlementId
+          ? "A frame credit does not require another payment proof."
+          : "Upload exactly one payment proof.",
         path: ["assets"],
       });
     }

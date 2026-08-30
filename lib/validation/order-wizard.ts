@@ -24,6 +24,7 @@ export interface WizardDraftValidationInput {
   customNotes: string;
   referenceUrl: string;
   packageSlug: string;
+  frameEntitlementId?: string;
   confirmedAccurate: boolean;
 }
 
@@ -156,12 +157,13 @@ export function getOrderWizardStepError(
     return "Enter a valid reference link or leave it blank.";
   }
 
-  if (step === 6 && !draft.packageSlug) {
-    return "Choose a package.";
+  if (step === 6 && !draft.packageSlug && !draft.frameEntitlementId) {
+    return "Choose a package or an available frame credit.";
   }
 
   if (
     step === 7 &&
+    !draft.frameEntitlementId &&
     assets.filter((asset) => asset.assetType === "payment_proof").length !== 1
   ) {
     return "Upload one payment proof.";

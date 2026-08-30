@@ -21,7 +21,7 @@ Browser navigation → protected server layout → verified Supabase claims → 
 
 ### Submit an order
 
-Wizard validation → reserve an RLS-owned `order_drafts` ID → upload originals to private `orders/{draft_id}` paths → server action validates counts and paths → PostgreSQL function locks the draft, verifies Storage objects, snapshots the authoritative package, creates the order with the same ID, records metadata/events/history, and deletes the draft atomically → submitted paths become client read-only → confirmation returns the order number.
+Wizard validation → reserve an RLS-owned `order_drafts` ID → upload originals to private `orders/{draft_id}` paths → server action validates counts and paths → PostgreSQL function locks the draft, verifies Storage objects, and either snapshots a new authoritative package plus receipt or locks and consumes one activated `frame_entitlements` credit without a receipt → order, entitlement counters, append-only ledger, metadata/events/history, and draft deletion commit atomically → submitted paths become client read-only → confirmation returns the order number. Row locks prevent two simultaneous submissions from spending the same last frame.
 
 ### Advance production
 
@@ -61,7 +61,7 @@ Admin export route streams metadata and private assets into a ZIP → export RPC
 - Package and theme configuration: Supabase tables.
 - Order form text draft: local storage plus an RLS-owned durable draft ID.
 - Uploaded originals: private Supabase Storage.
-- Order/payment/status/amendment truth: Supabase Postgres.
+- Order/payment/status truth and frame/amendment entitlements: Supabase Postgres. Clients have read-only entitlement access; only security-definer workflows consume allowances.
 - Admin email: server environment plus matching admin profile role.
 - Payment instructions and QR path: singleton `payment_settings` row managed by the owner.
 - Legacy Playwright submission mode: singleton `automation_settings` row, readable and writable only by the admin. The Hermes workflow always requires Telegram decisions regardless of this fallback preference.

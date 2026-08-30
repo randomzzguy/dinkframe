@@ -23,6 +23,10 @@ let draftId;
 let uploadedPath;
 let workflowOrderId;
 const workflowPaths = [];
+let creditEntitlementId;
+let creditOrderId;
+let exhaustedCreditDraftId;
+const creditPaths = [];
 
 try {
   const firstUser = await createTestUser(
@@ -132,6 +136,44 @@ try {
     "a client could insert an order notification receipt",
   );
 
+  const { error: clientCreditGrantError } = await secondClient
+    .from("frame_entitlements")
+    .insert({
+      client_id: secondUser.id,
+      source_order_id: randomUUID(),
+      package_id: randomUUID(),
+      package_name_snapshot: "Forged package",
+      frames_total: 999,
+      amendments_total: 999,
+      activated_at: new Date().toISOString(),
+    });
+  assert(
+    clientCreditGrantError,
+    "a client could grant themselves frame credits",
+  );
+
+  const { error: clientCreditUpdateError } = await secondClient
+    .from("frame_entitlements")
+    .update({ frames_total: 999 })
+    .eq("client_id", secondUser.id);
+  assert(
+    clientCreditUpdateError,
+    "a client could alter their frame-credit balance",
+  );
+
+  const { error: clientLedgerWriteError } = await secondClient
+    .from("frame_entitlement_ledger")
+    .insert({
+      entitlement_id: randomUUID(),
+      entry_kind: "package_granted",
+      frame_delta: 999,
+      amendment_delta: 999,
+    });
+  assert(
+    clientLedgerWriteError,
+    "a client could write a forged frame-credit ledger entry",
+  );
+
   const { error: clientClaimError } = await secondClient.rpc(
     "claim_generation_job",
     {
@@ -203,6 +245,7 @@ try {
     .from("packages")
     .select("id, name, price_myr, poster_count, free_amendments")
     .eq("active", true)
+    .gte("poster_count", 2)
     .order("sort_order")
     .limit(1)
     .single();
@@ -233,6 +276,31 @@ try {
   assertNoError(workflowOrderError, "could not create workflow smoke order");
   workflowOrderId = workflowOrder.id;
 
+  const { data: creditEntitlement, error: creditEntitlementError } = await admin
+    .from("frame_entitlements")
+    .insert({
+      client_id: secondUser.id,
+      source_order_id: workflowOrderId,
+      package_id: packageRow.id,
+      package_name_snapshot: packageRow.name,
+      frames_total: 2,
+      frames_used: 1,
+      amendments_total: packageRow.free_amendments,
+      amendments_used: 0,
+    })
+    .select("id")
+    .single();
+  assertNoError(
+    creditEntitlementError,
+    "could not create workflow frame entitlement",
+  );
+  creditEntitlementId = creditEntitlement.id;
+  const { error: linkEntitlementError } = await admin
+    .from("orders")
+    .update({ frame_entitlement_id: creditEntitlementId })
+    .eq("id", workflowOrderId);
+  assertNoError(linkEntitlementError, "could not link workflow entitlement");
+
   const { data: paidOrder, error: paymentError } = await firstClient.rpc(
     "change_payment_status",
     {
@@ -247,6 +315,147 @@ try {
       paidOrder.status === "design_in_progress",
     "payment confirmation did not start production",
   );
+
+  const { data: activatedEntitlement, error: activatedEntitlementError } =
+    await secondClient
+      .from("frame_entitlements")
+      .select("activated_at, frames_used")
+      .eq("id", creditEntitlementId)
+      .single();
+  assertNoError(
+    activatedEntitlementError,
+    "client could not read their activated entitlement",
+  );
+  assert(
+    activatedEntitlement.activated_at && activatedEntitlement.frames_used === 1,
+    "payment confirmation did not activate the frame entitlement",
+  );
+
+  const { data: creditDraft, error: creditDraftError } = await secondClient
+    .from("order_drafts")
+    .insert({ client_id: secondUser.id })
+    .select("id")
+    .single();
+  assertNoError(creditDraftError, "could not create credit-funded draft");
+  const creditAssetSpecs = [
+    ["player_photo", "player-a.png"],
+    ["player_photo", "player-b.png"],
+    ["tournament_logo", "tournament.png"],
+  ];
+  const creditAssets = [];
+  for (const [assetType, filename] of creditAssetSpecs) {
+    const path = `orders/${creditDraft.id}/${assetType}/${filename}`;
+    creditPaths.push(path);
+    const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+    const { error: assetUploadError } = await secondClient.storage
+      .from("order-assets")
+      .upload(path, bytes, { contentType: "image/png" });
+    assertNoError(
+      assetUploadError,
+      `credit asset upload failed for ${filename}`,
+    );
+    creditAssets.push({
+      assetType,
+      bucketId: "order-assets",
+      storagePath: path,
+      originalFilename: filename,
+      mimeType: "image/png",
+      fileSize: bytes.byteLength,
+    });
+  }
+  const { data: creditOrder, error: creditOrderError } = await secondClient.rpc(
+    "submit_order_from_draft",
+    {
+      target_draft_id: creditDraft.id,
+      order_payload: {
+        playerName: "Credit Workflow Test",
+        whatsapp: "+60112223333",
+        tournamentName: "Credit Open",
+        tournamentStartDate: "2026-10-15",
+        tournamentEndDate: "2026-10-16",
+        tournamentLocation: "Kuala Lumpur",
+        frameType: "upcoming_event",
+        events: [{ eventName: "Mixed Doubles", sortOrder: 0 }],
+        sponsors: [],
+        colorPreference: "orange",
+        themePreference: "futuristic",
+        packageSlug: packageRow.id,
+        frameEntitlementId: creditEntitlementId,
+      },
+      asset_payload: creditAssets,
+    },
+  );
+  assertNoError(creditOrderError, "credit-funded order submission failed");
+  creditOrderId = creditOrder.id;
+  const { data: consumedEntitlement, error: consumedEntitlementError } =
+    await secondClient
+      .from("frame_entitlements")
+      .select("frames_total, frames_used")
+      .eq("id", creditEntitlementId)
+      .single();
+  assertNoError(
+    consumedEntitlementError,
+    "could not read consumed entitlement",
+  );
+  assert(
+    consumedEntitlement.frames_total === 2 &&
+      consumedEntitlement.frames_used === 2,
+    "credit-funded order did not consume exactly one frame",
+  );
+  const { error: amendmentPeriodError } = await firstClient.rpc(
+    "change_order_status",
+    {
+      target_order_id: creditOrderId,
+      next_status: "amendment_period",
+      change_note: "Entitlement smoke",
+      force_transition: true,
+    },
+  );
+  assertNoError(amendmentPeriodError, "could not open amendment smoke period");
+  const { data: amendment, error: amendmentError } = await secondClient.rpc(
+    "submit_amendment",
+    {
+      target_order_id: creditOrderId,
+      request_body: "Synthetic shared amendment allowance test.",
+    },
+  );
+  assertNoError(amendmentError, "shared amendment submission failed");
+  assert(amendment.billing_kind === "free", "shared amendment was not free");
+  const { data: amendedEntitlement, error: amendedEntitlementError } =
+    await secondClient
+      .from("frame_entitlements")
+      .select("amendments_used")
+      .eq("id", creditEntitlementId)
+      .single();
+  assertNoError(
+    amendedEntitlementError,
+    "could not read shared amendment usage",
+  );
+  assert(
+    amendedEntitlement.amendments_used === 1,
+    "shared amendment allowance was not consumed exactly once",
+  );
+  const { data: exhaustedDraft, error: exhaustedDraftError } =
+    await secondClient
+      .from("order_drafts")
+      .insert({ client_id: secondUser.id })
+      .select("id")
+      .single();
+  assertNoError(exhaustedDraftError, "could not create exhausted-credit draft");
+  exhaustedCreditDraftId = exhaustedDraft.id;
+  const { error: exhaustedCreditError } = await secondClient.rpc(
+    "submit_order_from_draft",
+    {
+      target_draft_id: exhaustedCreditDraftId,
+      order_payload: {
+        frameType: "upcoming_event",
+        events: [{ eventName: "Mixed Doubles", sortOrder: 0 }],
+        frameEntitlementId: creditEntitlementId,
+      },
+      asset_payload: [],
+    },
+  );
+  assert(exhaustedCreditError, "an exhausted entitlement funded another frame");
 
   const { error: clientFinishingError } = await secondClient.rpc(
     "mark_order_finishing_after_image_approval",
@@ -319,6 +528,31 @@ try {
 
   console.log("Live RLS smoke test passed.");
 } finally {
+  if (creditPaths.length) {
+    await admin.storage.from("order-assets").remove(creditPaths);
+  }
+  if (exhaustedCreditDraftId) {
+    await admin.from("order_drafts").delete().eq("id", exhaustedCreditDraftId);
+  }
+  if (creditEntitlementId) {
+    await admin
+      .from("frame_entitlement_ledger")
+      .delete()
+      .eq("entitlement_id", creditEntitlementId);
+    await admin
+      .from("orders")
+      .update({ frame_entitlement_id: null })
+      .eq("frame_entitlement_id", creditEntitlementId);
+  }
+  if (creditOrderId) {
+    await admin.from("orders").delete().eq("id", creditOrderId);
+  }
+  if (creditEntitlementId) {
+    await admin
+      .from("frame_entitlements")
+      .delete()
+      .eq("id", creditEntitlementId);
+  }
   if (workflowPaths.length) {
     await admin.storage.from("order-assets").remove(workflowPaths);
   }

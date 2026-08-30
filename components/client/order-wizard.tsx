@@ -57,7 +57,7 @@ const steps = [
   "Payment",
   "Review",
 ] as const;
-const storageKey = "dinkframe.order-draft.v2";
+const storageKey = "dinkframe.order-draft.v3";
 
 type UploadableAssetType = Exclude<AssetType, "final_poster">;
 type StepIndicatorStatus = "neutral" | "complete" | "incomplete";
@@ -89,6 +89,7 @@ type Draft = {
   referenceUrl: string;
   preferredCompletionDate: string;
   packageSlug: string;
+  frameEntitlementId: string;
   confirmedAccurate: boolean;
 };
 
@@ -104,6 +105,14 @@ export interface ThemeOption {
   slug: string;
   name: string;
   description: string | null;
+}
+
+export interface FrameCreditOption {
+  id: string;
+  packageName: string;
+  framesRemaining: number;
+  framesTotal: number;
+  amendmentsRemaining: number;
 }
 
 export interface PaymentInstructions {
@@ -124,6 +133,7 @@ export interface InitialProfile {
 function createBlankDraft(
   packages: PackageOption[],
   initialProfile: InitialProfile,
+  frameCredits: FrameCreditOption[],
 ): Draft {
   return {
     playerName: initialProfile.fullName ?? "",
@@ -152,6 +162,7 @@ function createBlankDraft(
     referenceUrl: "",
     preferredCompletionDate: "",
     packageSlug: packages[0]?.slug ?? "",
+    frameEntitlementId: frameCredits[0]?.id ?? "",
     confirmedAccurate: false,
   };
 }
@@ -161,18 +172,20 @@ export function OrderWizard({
   themes,
   paymentInstructions,
   initialProfile,
+  frameCredits,
 }: {
   packages: PackageOption[];
   themes: ThemeOption[];
   paymentInstructions: PaymentInstructions;
   initialProfile: InitialProfile;
+  frameCredits: FrameCreditOption[];
 }) {
   const [step, setStep] = useState(0);
   const [stepIndicatorStatuses, setStepIndicatorStatuses] = useState<
     StepIndicatorStatus[]
   >(() => steps.map(() => "neutral"));
   const [draft, setDraft] = useState<Draft>(() =>
-    createBlankDraft(packages, initialProfile),
+    createBlankDraft(packages, initialProfile, frameCredits),
   );
   const [draftId, setDraftId] = useState<string>();
   const [assets, setAssets] = useState<UploadedAssetInput[]>([]);
@@ -191,6 +204,10 @@ export function OrderWizard({
   const selectedPackage = useMemo(
     () => packages.find((item) => item.slug === draft.packageSlug),
     [draft.packageSlug, packages],
+  );
+  const selectedFrameCredit = useMemo(
+    () => frameCredits.find((item) => item.id === draft.frameEntitlementId),
+    [draft.frameEntitlementId, frameCredits],
   );
   const playerPhotos = assets.filter(
     (asset) => asset.assetType === "player_photo",
@@ -225,10 +242,20 @@ export function OrderWizard({
             draftId?: string;
             assets?: UploadedAssetInput[];
           };
-          const blankDraft = createBlankDraft(packages, initialProfile);
+          const blankDraft = createBlankDraft(
+            packages,
+            initialProfile,
+            frameCredits,
+          );
+          const savedEntitlementId = parsed.draft?.frameEntitlementId ?? "";
           setDraft({
             ...blankDraft,
             ...parsed.draft,
+            frameEntitlementId: frameCredits.some(
+              (credit) => credit.id === savedEntitlementId,
+            )
+              ? savedEntitlementId
+              : blankDraft.frameEntitlementId,
             events: (parsed.draft?.events ?? blankDraft.events).map(
               (event) => ({ ...event, placement: event.placement ?? "" }),
             ),
@@ -243,7 +270,7 @@ export function OrderWizard({
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [initialProfile, packages]);
+  }, [frameCredits, initialProfile, packages]);
 
   useEffect(() => {
     if (hydrated && !submittedOrder) {
@@ -394,6 +421,32 @@ export function OrderWizard({
     }
   };
 
+  const selectFrameCredit = async (entitlementId: string) => {
+    const receipts = assets.filter(
+      (asset) => asset.assetType === "payment_proof",
+    );
+    setDraft((current) => ({
+      ...current,
+      frameEntitlementId: entitlementId,
+    }));
+    if (receipts.length > 0) {
+      await Promise.all(receipts.map((asset) => removeOrderAsset(asset)));
+      setAssets((current) =>
+        current.filter((asset) => asset.assetType !== "payment_proof"),
+      );
+    }
+    setMessage(undefined);
+  };
+
+  const buyPackage = (packageSlug: string) => {
+    setDraft((current) => ({
+      ...current,
+      packageSlug,
+      frameEntitlementId: "",
+    }));
+    setMessage(undefined);
+  };
+
   const goToStep = (nextStep: number) => {
     if (nextStep === step) return;
 
@@ -462,6 +515,7 @@ export function OrderWizard({
           referenceUrl: draft.referenceUrl || undefined,
           preferredCompletionDate: draft.preferredCompletionDate || undefined,
           packageSlug: draft.packageSlug,
+          frameEntitlementId: draft.frameEntitlementId || undefined,
           confirmedAccurate: true,
         };
         const result = await submitOrder({
@@ -952,147 +1006,216 @@ export function OrderWizard({
           )}
 
           {step === 6 && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {packages.map((item) => (
-                <button
-                  key={item.slug}
-                  type="button"
-                  onClick={() => update("packageSlug", item.slug)}
-                  className={`rounded-xl border p-5 text-left ${draft.packageSlug === item.slug ? "border-black bg-neutral-950 text-white" : "border-black/10"}`}
-                >
-                  <span className="text-lg font-bold">{item.name}</span>
-                  <span className="mt-1 block text-3xl font-black">
-                    RM{item.priceMyr}
-                  </span>
-                  <span className="mt-4 block text-sm opacity-60">
-                    {item.posterCount} poster{item.posterCount > 1 ? "s" : ""} ·{" "}
-                    {item.freeAmendments} amendments
-                  </span>
-                </button>
-              ))}
+            <div className="space-y-7">
+              {frameCredits.length > 0 && (
+                <div>
+                  <p className="font-heading text-xl font-bold">
+                    Use a frame you already own
+                  </p>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    No new payment or receipt is needed.
+                  </p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {frameCredits.map((credit) => (
+                      <button
+                        key={credit.id}
+                        type="button"
+                        onClick={() => void selectFrameCredit(credit.id)}
+                        className={`rounded-xl border p-5 text-left transition ${draft.frameEntitlementId === credit.id ? "border-black bg-neutral-950 text-white" : "border-lime-300 bg-lime-50"}`}
+                      >
+                        <span className="text-lg font-bold">
+                          {credit.packageName}
+                        </span>
+                        <span className="mt-1 block text-3xl font-black">
+                          {credit.framesRemaining} frame
+                          {credit.framesRemaining === 1 ? "" : "s"} left
+                        </span>
+                        <span className="mt-4 block text-sm opacity-65">
+                          {credit.amendmentsRemaining} shared amendments left
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="font-heading text-xl font-bold">
+                  {frameCredits.length > 0
+                    ? "Or purchase another package"
+                    : "Choose your package"}
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {packages.map((item) => (
+                    <button
+                      key={item.slug}
+                      type="button"
+                      onClick={() => buyPackage(item.slug)}
+                      className={`rounded-xl border p-5 text-left transition ${!draft.frameEntitlementId && draft.packageSlug === item.slug ? "border-black bg-neutral-950 text-white" : "border-black/10"}`}
+                    >
+                      <span className="text-lg font-bold">{item.name}</span>
+                      <span className="mt-1 block text-3xl font-black">
+                        RM{item.priceMyr}
+                      </span>
+                      <span className="mt-4 block text-sm opacity-60">
+                        {item.posterCount} poster
+                        {item.posterCount > 1 ? "s" : ""} ·{" "}
+                        {item.freeAmendments} amendments
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
           {step === 7 && (
             <div className="space-y-6">
-              <div className="overflow-hidden rounded-3xl border border-black/10 bg-white shadow-[0_18px_60px_rgba(32,42,12,.08)]">
-                <div className="flex flex-wrap items-center justify-between gap-4 bg-neutral-950 px-6 py-5 text-white">
-                  <div>
-                    <p className="text-primary text-xs font-bold tracking-[0.16em] uppercase">
-                      Amount to pay
-                    </p>
-                    <p className="font-heading mt-1 text-3xl font-bold">
-                      RM{selectedPackage?.priceMyr}
-                    </p>
-                  </div>
-                  <p className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-neutral-300">
-                    {selectedPackage?.name}
+              {selectedFrameCredit ? (
+                <div className="overflow-hidden rounded-3xl border border-lime-300 bg-lime-50 p-7 shadow-[0_18px_60px_rgba(32,42,12,.08)]">
+                  <p className="text-xs font-bold tracking-[0.16em] text-lime-800 uppercase">
+                    Frame credit applied
+                  </p>
+                  <h3 className="font-heading mt-2 text-3xl font-bold">
+                    Nothing to pay this time.
+                  </h3>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-lime-950/70">
+                    This brief will use one of your{" "}
+                    {selectedFrameCredit.packageName} frames. After submission
+                    you will have {selectedFrameCredit.framesRemaining - 1}{" "}
+                    frame
+                    {selectedFrameCredit.framesRemaining - 1 === 1
+                      ? ""
+                      : "s"}{" "}
+                    left. Your shared amendment allowance remains available
+                    across the package.
                   </p>
                 </div>
-
-                <div className="grid lg:grid-cols-[1.05fr_.95fr]">
-                  <div className="p-6 sm:p-8">
-                    <div className="flex items-center gap-3">
-                      <span className="bg-primary/25 grid size-11 place-items-center rounded-2xl">
-                        <Landmark className="size-5" />
-                      </span>
+              ) : (
+                <>
+                  <div className="overflow-hidden rounded-3xl border border-black/10 bg-white shadow-[0_18px_60px_rgba(32,42,12,.08)]">
+                    <div className="flex flex-wrap items-center justify-between gap-4 bg-neutral-950 px-6 py-5 text-white">
                       <div>
-                        <p className="font-heading text-xl font-bold">
-                          Bank transfer
+                        <p className="text-primary text-xs font-bold tracking-[0.16em] uppercase">
+                          Amount to pay
                         </p>
-                        <p className="text-xs text-neutral-500">
-                          Transfer the exact package amount
+                        <p className="font-heading mt-1 text-3xl font-bold">
+                          RM{selectedPackage?.priceMyr}
                         </p>
                       </div>
+                      <p className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-neutral-300">
+                        {selectedPackage?.name}
+                      </p>
                     </div>
 
-                    <div className="mt-6 divide-y divide-black/8 rounded-2xl border border-black/8 bg-[#f8f9f3] px-4">
-                      <PaymentDetail
-                        label="Business name"
-                        value={paymentInstructions.accountName}
-                      />
-                      <PaymentDetail
-                        label="Account number"
-                        value={paymentInstructions.accountNumber}
-                        copyable
-                      />
-                      <PaymentDetail
-                        label="Bank name"
-                        value={paymentInstructions.bankName}
-                      />
-                      {paymentInstructions.duitnowId && (
-                        <PaymentDetail
-                          label="DuitNow ID"
-                          value={paymentInstructions.duitnowId}
-                          copyable
-                        />
+                    <div className="grid lg:grid-cols-[1.05fr_.95fr]">
+                      <div className="p-6 sm:p-8">
+                        <div className="flex items-center gap-3">
+                          <span className="bg-primary/25 grid size-11 place-items-center rounded-2xl">
+                            <Landmark className="size-5" />
+                          </span>
+                          <div>
+                            <p className="font-heading text-xl font-bold">
+                              Bank transfer
+                            </p>
+                            <p className="text-xs text-neutral-500">
+                              Transfer the exact package amount
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 divide-y divide-black/8 rounded-2xl border border-black/8 bg-[#f8f9f3] px-4">
+                          <PaymentDetail
+                            label="Business name"
+                            value={paymentInstructions.accountName}
+                          />
+                          <PaymentDetail
+                            label="Account number"
+                            value={paymentInstructions.accountNumber}
+                            copyable
+                          />
+                          <PaymentDetail
+                            label="Bank name"
+                            value={paymentInstructions.bankName}
+                          />
+                          {paymentInstructions.duitnowId && (
+                            <PaymentDetail
+                              label="DuitNow ID"
+                              value={paymentInstructions.duitnowId}
+                              copyable
+                            />
+                          )}
+                        </div>
+
+                        {paymentInstructions.instructions && (
+                          <p className="mt-5 text-sm leading-6 text-neutral-600">
+                            {paymentInstructions.instructions}
+                          </p>
+                        )}
+                      </div>
+
+                      {paymentInstructions.qrUrl && (
+                        <div className="border-t border-black/8 bg-[#f3f6eb] p-6 sm:p-8 lg:border-t-0 lg:border-l">
+                          <div className="flex items-center gap-3">
+                            <span className="bg-primary/25 grid size-11 place-items-center rounded-2xl">
+                              <QrCode className="size-5" />
+                            </span>
+                            <div>
+                              <p className="font-heading text-xl font-bold">
+                                Scan to pay
+                              </p>
+                              <p className="text-xs text-neutral-500">
+                                Touch &apos;n Go or any banking app
+                              </p>
+                            </div>
+                          </div>
+                          <a
+                            href={paymentInstructions.qrUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-6 block"
+                          >
+                            {/* Supports the public TnG QR and optional signed admin QR URLs. */}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={paymentInstructions.qrUrl}
+                              alt="Touch 'n Go payment QR code"
+                              className="mx-auto h-auto w-full max-w-72 rounded-2xl border border-black/10 bg-white object-contain p-2 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                            />
+                            <span className="mt-3 block text-center text-xs font-semibold underline underline-offset-4">
+                              Open QR at full size
+                            </span>
+                          </a>
+                        </div>
                       )}
                     </div>
-
-                    {paymentInstructions.instructions && (
-                      <p className="mt-5 text-sm leading-6 text-neutral-600">
-                        {paymentInstructions.instructions}
-                      </p>
-                    )}
                   </div>
-
-                  {paymentInstructions.qrUrl && (
-                    <div className="border-t border-black/8 bg-[#f3f6eb] p-6 sm:p-8 lg:border-t-0 lg:border-l">
-                      <div className="flex items-center gap-3">
-                        <span className="bg-primary/25 grid size-11 place-items-center rounded-2xl">
-                          <QrCode className="size-5" />
-                        </span>
-                        <div>
-                          <p className="font-heading text-xl font-bold">
-                            Scan to pay
-                          </p>
-                          <p className="text-xs text-neutral-500">
-                            Touch &apos;n Go or any banking app
-                          </p>
-                        </div>
-                      </div>
-                      <a
-                        href={paymentInstructions.qrUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-6 block"
-                      >
-                        {/* Supports the public TnG QR and optional signed admin QR URLs. */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={paymentInstructions.qrUrl}
-                          alt="Touch 'n Go payment QR code"
-                          className="mx-auto h-auto w-full max-w-72 rounded-2xl border border-black/10 bg-white object-contain p-2 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
-                        />
-                        <span className="mt-3 block text-center text-xs font-semibold underline underline-offset-4">
-                          Open QR at full size
-                        </span>
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="font-heading text-xl font-bold">
-                  Upload your payment receipt
-                </p>
-                <p className="mt-1 text-sm text-neutral-500">
-                  Once payment is complete, add the receipt so we can verify it.
-                </p>
-              </div>
-              <UploadArea
-                title="Payment receipt"
-                note="Upload one JPEG, PNG, WebP, or PDF up to 10 MB. DINKFRAME confirms it manually."
-                accept="image/jpeg,image/png,image/webp,application/pdf"
-                onFiles={(files) => void handleFiles("payment_proof", files)}
-                disabled={isUploading}
-              />
-              <UploadProgress progress={uploadProgress} />
-              <AssetList
-                assets={paymentProofs}
-                previewUrls={previewUrls}
-                onRemove={removeAsset}
-              />
+                  <div>
+                    <p className="font-heading text-xl font-bold">
+                      Upload your payment receipt
+                    </p>
+                    <p className="mt-1 text-sm text-neutral-500">
+                      Once payment is complete, add the receipt so we can verify
+                      it.
+                    </p>
+                  </div>
+                  <UploadArea
+                    title="Payment receipt"
+                    note="Upload one JPEG, PNG, WebP, or PDF up to 10 MB. DINKFRAME confirms it manually."
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    onFiles={(files) =>
+                      void handleFiles("payment_proof", files)
+                    }
+                    disabled={isUploading}
+                  />
+                  <UploadProgress progress={uploadProgress} />
+                  <AssetList
+                    assets={paymentProofs}
+                    previewUrls={previewUrls}
+                    onRemove={removeAsset}
+                  />
+                </>
+              )}
             </div>
           )}
 
@@ -1151,7 +1274,11 @@ export function OrderWizard({
                 )}
                 <ReviewItem
                   label="Package"
-                  value={`${selectedPackage?.name ?? ""} · RM${selectedPackage?.priceMyr ?? ""}`}
+                  value={
+                    selectedFrameCredit
+                      ? `${selectedFrameCredit.packageName} · existing frame credit`
+                      : `${selectedPackage?.name ?? ""} · RM${selectedPackage?.priceMyr ?? ""}`
+                  }
                 />
                 <ReviewItem
                   label="Creative direction"
@@ -1159,7 +1286,7 @@ export function OrderWizard({
                 />
                 <ReviewItem
                   label="Files"
-                  value={`${playerPhotos.length} player photos · ${tournamentLogos.length} tournament logo · ${paymentProofs.length} payment proof`}
+                  value={`${playerPhotos.length} player photos · ${tournamentLogos.length} tournament logo · ${selectedFrameCredit ? "no new payment proof needed" : `${paymentProofs.length} payment proof`}`}
                 />
               </div>
               <label className="flex items-start gap-3 rounded-xl border border-black/10 p-4 text-sm">
