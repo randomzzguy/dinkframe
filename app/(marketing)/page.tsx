@@ -63,7 +63,7 @@ export default function HomePage() {
                 "rounded-full px-6 font-bold",
               )}
             >
-              Create or manage frames <ArrowRight />
+              Create your frame <ArrowRight />
             </Link>
             <Link
               href="/work"
@@ -195,7 +195,7 @@ export default function HomePage() {
               "relative shrink-0 rounded-full bg-black px-6 text-white shadow-2xl hover:bg-neutral-900",
             )}
           >
-            New & returning clients <ArrowRight />
+            Book your frame <ArrowRight />
           </Link>
         </div>
       </section>
