@@ -55,6 +55,12 @@ describe("generation automation", () => {
     expect(message).toContain("Mixed doubles with Kai");
     expect(message).toContain("Upcoming event");
     expect(message).toContain("anticipation-led upcoming-event campaign");
+    expect(message).toContain("FRAME-TYPE TEXT EXCLUSION");
+    expect(message).toContain("private routing metadata, never poster copy");
+    expect(message).toContain("Exclude them from the REQUIRED TEXT CHECKLIST");
+    expect(message).toContain(
+      "Internal frame-type routing (NEVER VISIBLE COPY)",
+    );
     expect(message).toContain("electric blue");
     expect(message).toContain("Acme");
     expect(message).toContain("350 and 650 words");

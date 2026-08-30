@@ -71,7 +71,7 @@ export type ClaimedGenerationAsset = GenerationAssetManifestItem & {
   downloadUrl: string;
 };
 
-export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v12";
+export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v13";
 export const IMAGE_GENERATION_TEMPLATE_VERSION = "image-generation-v2";
 
 export const GENERATION_STAGE_LABELS: Record<GenerationJobStage, string> = {
@@ -105,12 +105,13 @@ export function buildPromptStudioMessage(snapshot: GenerationBriefSnapshot) {
     "Treat an obvious flat white rectangle surrounding the supplied logo as removable export background, not protected logo artwork. Preserve the actual mark, lettering, colors, and proportions, isolate it cleanly, and embed it directly into the composition without a floating card or pasted-on box.",
     "Make location storytelling mandatory. Build the background from both unmistakable pickleball language and the supplied venue, city, or country. If an exact venue image/reference is supplied, use it faithfully; otherwise use recognizable location-informed architecture, landscape, materials, or cultural geometry without inventing an exact stadium likeness.",
     "Make the selected frame type control the poster’s story, headline hierarchy, energy, and factual emphasis. It must not be treated as a passive label.",
+    "FRAME-TYPE TEXT EXCLUSION: frame type and category labels are private routing metadata, never poster copy. Never render or quote ‘Upcoming event’, ‘Congratulations’, ‘Announcement’, their database values, or any similar category heading. Exclude them from the REQUIRED TEXT CHECKLIST. Express their intent only through art direction, hierarchy, and mood. The only exception is wording independently supplied verbatim inside the client’s announcement brief.",
     "For culturally inspired themes, include a hard TEXT EXCLUSION: render zero unsupplied languages, faux glyphs, seals, stamps, or pseudo-writing. Build the theme through composition, materials, geometry, rhythm, and supplied copy only.",
     "Keep every protected asset, athlete body part, and required text inside a centered 4:5 crop-safe region, with only expendable background outside it.",
     "",
     `Player: ${snapshot.playerName}`,
-    `Frame type: ${formatFrameType(snapshot.frameType)}`,
-    `Frame-type direction: ${formatFrameTypeDirection(snapshot)}`,
+    `Internal frame-type routing (NEVER VISIBLE COPY): ${formatFrameType(snapshot.frameType)}`,
+    `Internal frame-type direction (NEVER VISIBLE COPY): ${formatFrameTypeDirection(snapshot)}`,
     `Tournament: ${snapshot.tournamentName}`,
     `Dates: ${snapshot.tournamentStartDate} to ${snapshot.tournamentEndDate}`,
     `Location: ${snapshot.tournamentLocation}`,

@@ -67,6 +67,11 @@ Preparing or reviewing a prompt never permits image generation.
    - **Announcement:** turn the supplied brief into a concise headline and
      support line in the selected tone. Preserve all names and facts, and treat
      quoted wording as exact copy.
+     Treat all frame-type/category names as private routing metadata. Never render
+     `Upcoming event`, `Congratulations`, `Announcement`, their internal values,
+     or a similar category heading. Express their intent only through hierarchy,
+     composition, and mood. Allow the same words only when the client independently
+     supplied them verbatim inside announcement copy.
 
 ## Prompt contract
 
@@ -79,6 +84,8 @@ Preparing or reviewing a prompt never permits image generation.
 - Quote the exact text that must appear. Keep decorative copy out.
 - Match headline behavior to the frame type: anticipation for upcoming events,
   results for congratulations, and the announcement itself for announcements.
+- Exclude frame-type names and category labels from visible copy and the
+  **REQUIRED TEXT CHECKLIST**.
 - End with a **REQUIRED TEXT CHECKLIST**. List every client-facing string and
   require each one to appear exactly once. Instruct image mode to count and
   verify the rendered checklist before finishing.

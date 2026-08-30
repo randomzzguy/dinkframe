@@ -87,6 +87,13 @@ second time elsewhere; note this explicitly in the required-text checklist.
 
 ## Frame-type storytelling
 
+Frame type is internal art-direction metadata, never a supplied headline. Do
+not typeset `Upcoming event`, `Congratulations`, `Announcement`, an internal
+database value, or an equivalent category heading, and never add one to the
+required-text checklist. Communicate the category through visual storytelling.
+Only preserve the same words when they independently occur verbatim in the
+client’s announcement copy.
+
 - **Upcoming event:** create forward momentum and anticipation. Treat date and
   place as meaningful campaign information, not footer metadata.
 - **Congratulations:** make the achievement unmistakable at thumbnail size.
@@ -150,3 +157,5 @@ Before returning a prompt, verify:
    clearance.
 9. The background visibly communicates both pickleball and the supplied place.
 10. The logo is embedded without an obvious rectangular export background.
+11. No internal frame-type or category label appears in visible copy or the
+    required-text checklist.

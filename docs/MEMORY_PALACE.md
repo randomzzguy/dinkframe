@@ -70,6 +70,11 @@ one controlled tone. These additions do not remove the existing player,
 tournament, event, creative, upload, package, or payment requirements. The
 shared labels and values live in `lib/orders/frame-types.ts`.
 
+Frame type is routing metadata only. It changes narrative and hierarchy, but
+`Upcoming event`, `Congratulations`, `Announcement`, and equivalent category
+headings must never be rendered or included in a poster text checklist unless
+the client independently supplied that wording as announcement copy.
+
 ## The design floor — admin production
 
 What happens: the owner confirms payment, produces the artwork, responds to amendments, delivers files, and prepares archives. Status follows those actions automatically.
