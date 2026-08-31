@@ -31,6 +31,12 @@ export function getSafeNextPath(
   }
 }
 
+export function getAdminPostLoginPath(nextPath: string) {
+  return nextPath === "/admin" || nextPath.startsWith("/admin/")
+    ? nextPath
+    : "/admin";
+}
+
 export function getCrossDomainLoginRedirect(
   requestUrl: URL,
   appUrl: string | undefined,

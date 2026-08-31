@@ -706,7 +706,8 @@ export type Database = {
         | "submission_received"
         | "payment_confirmed"
         | "review_draft_ready"
-        | "final_poster_ready";
+        | "final_poster_ready"
+        | "admin_new_order";
       order_notification_status: "sending" | "sent" | "failed";
       frame_entitlement_entry_kind:
         "package_granted" | "frame_used" | "amendment_used";

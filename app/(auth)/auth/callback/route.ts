@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isAdminEmail } from "@/lib/auth/guards";
 import { needsOnboarding } from "@/lib/auth/onboarding";
-import { getSafeNextPath } from "@/lib/auth/urls";
+import { getAdminPostLoginPath, getSafeNextPath } from "@/lib/auth/urls";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
       if (data.user) {
         if (isAdminEmail(data.user.email)) {
-          destination = "/admin";
+          destination = getAdminPostLoginPath(safeNext);
         } else {
           const { data: profile, error: profileError } = await supabase
             .from("profiles")

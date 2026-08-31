@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/guards";
+import { sendAdminNewOrderNotification } from "@/lib/email/admin-order-notifications";
 import { sendOrderNotification } from "@/lib/email/order-notifications";
 import type { Json } from "@/lib/types/database";
 import {
@@ -107,7 +108,18 @@ export async function submitOrder(
   }
 
   revalidatePath("/dashboard");
-  await sendOrderNotification(data.id, "submission_received");
+  const notifications = await Promise.allSettled([
+    sendOrderNotification(data.id, "submission_received"),
+    sendAdminNewOrderNotification(data.id),
+  ]);
+  for (const notification of notifications) {
+    if (notification.status === "rejected") {
+      console.error("order_submission_notification_failed", {
+        orderId: data.id,
+        error: notification.reason,
+      });
+    }
+  }
   return { ok: true, orderId: data.id, orderNumber: data.orderNumber };
 }
 

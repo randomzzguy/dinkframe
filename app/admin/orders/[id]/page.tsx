@@ -20,10 +20,20 @@ import { ORDER_STATUS_LABELS } from "@/lib/orders/status";
 
 export default async function AdminOrderPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ paymentAction?: string | string[] }>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
+  const rawPaymentAction = Array.isArray(query.paymentAction)
+    ? query.paymentAction[0]
+    : query.paymentAction;
+  const paymentIntent =
+    rawPaymentAction === "confirm" || rawPaymentAction === "reject"
+      ? rawPaymentAction
+      : undefined;
   const { supabase } = await requireAdmin();
   const { data: order } = await supabase
     .from("orders")
@@ -126,6 +136,15 @@ export default async function AdminOrderPage({
           <PaymentStatusBadge status={order.payment_status} prefix />
           <OrderStatusBadge status={order.status} />
         </div>
+      </div>
+
+      <div className="mt-6">
+        <OrderControls
+          orderId={order.id}
+          currentStatus={order.status}
+          currentPaymentStatus={order.payment_status}
+          initialIntent={paymentIntent}
+        />
       </div>
 
       <div className="mt-10 grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
@@ -355,13 +374,6 @@ export default async function AdminOrderPage({
         </div>
       </div>
 
-      <div className="mt-5">
-        <OrderControls
-          orderId={order.id}
-          currentStatus={order.status}
-          currentPaymentStatus={order.payment_status}
-        />
-      </div>
       <div className="mt-5">
         <GenerationControls
           orderId={order.id}

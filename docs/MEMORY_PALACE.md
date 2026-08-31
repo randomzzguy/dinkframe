@@ -101,6 +101,19 @@ Poster delivery rule: the admin uploads directly to a private order-scoped Stora
 
 Action rule: confirming payment starts production; approving the generated image enters finishing touches; publishing a review opens amendments; publishing a final completes the order. Never require the owner to repeat these outcomes in a separate status form.
 
+New-order owner alert: every successful submission also sends one idempotent
+email to `ADMIN_EMAIL` with the authoritative player, package, order number,
+client contact, and (for a paid package) the private payment proof as an email
+attachment. Credit-funded repeat frames are labeled as already in production
+and never show payment controls.
+
+Email payment-action rule: email links never mutate an order. They pass only an
+allowlisted order UUID and review intent through `/auth/admin-order-action`,
+preserve that destination through magic-link login, and open the normal admin
+payment form. The owner must still make one authenticated POST; the database
+RPC remains the sole payment/status mutation boundary. This prevents email-link
+scanners or forwarded messages from confirming or rejecting a payment.
+
 ## The job board — order state
 
 Every order moves through this controlled path:

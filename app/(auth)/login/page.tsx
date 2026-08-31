@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/auth/login-form";
 import { isAdminEmail } from "@/lib/auth/guards";
-import { getSafeNextPath } from "@/lib/auth/urls";
+import { getAdminPostLoginPath, getSafeNextPath } from "@/lib/auth/urls";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -26,7 +26,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const { data } = await supabase.auth.getClaims();
 
   if (data?.claims?.sub) {
-    redirect(isAdminEmail(data.claims.email) ? "/admin" : nextPath);
+    redirect(
+      isAdminEmail(data.claims.email)
+        ? getAdminPostLoginPath(nextPath)
+        : nextPath,
+    );
   }
   const hasCallbackError = Array.isArray(errorValue)
     ? errorValue.includes("callback")

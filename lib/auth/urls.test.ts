@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getCrossDomainLoginRedirect, getSafeNextPath } from "./urls";
+import {
+  getAdminPostLoginPath,
+  getCrossDomainLoginRedirect,
+  getSafeNextPath,
+} from "./urls";
 
 const appUrl = "https://app.dinkframe.my";
 const siteUrl = "https://dinkframe.my";
@@ -52,5 +56,19 @@ describe("safe post-login destinations", () => {
     "/\\attacker.example/orders/abc",
   ])("rejects an external redirect attempt: %s", (value) => {
     expect(getSafeNextPath(value)).toBe("/dashboard");
+  });
+});
+
+describe("admin post-login destinations", () => {
+  it("preserves a safe admin order action after magic-link sign-in", () => {
+    expect(
+      getAdminPostLoginPath(
+        "/admin/orders/00000000-0000-4000-8000-000000000042?paymentAction=confirm",
+      ),
+    ).toContain("paymentAction=confirm");
+  });
+
+  it("does not send an admin account to a client destination", () => {
+    expect(getAdminPostLoginPath("/orders/abc")).toBe("/admin");
   });
 });

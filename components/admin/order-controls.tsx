@@ -1,6 +1,11 @@
 "use client";
 
-import { CheckCircle2, RotateCcw, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  RotateCcw,
+  ShieldCheck,
+} from "lucide-react";
 import { useActionState } from "react";
 
 import {
@@ -19,10 +24,12 @@ export function OrderControls({
   orderId,
   currentStatus,
   currentPaymentStatus,
+  initialIntent,
 }: {
   orderId: string;
   currentStatus: OrderStatus;
   currentPaymentStatus: PaymentStatus;
+  initialIntent?: "confirm" | "reject";
 }) {
   const [paymentState, paymentAction, paymentPending] = useActionState(
     changePaymentStatus,
@@ -31,7 +38,10 @@ export function OrderControls({
   const paymentConfirmed = currentPaymentStatus === "confirmed";
 
   return (
-    <section className="rounded-2xl border border-black/10 bg-white p-6">
+    <section
+      id="payment-action"
+      className="scroll-mt-24 rounded-2xl border border-black/10 bg-white p-6"
+    >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="eyebrow">Production control</p>
@@ -58,6 +68,22 @@ export function OrderControls({
         </div>
       ) : (
         <form action={paymentAction} className="mt-6 space-y-4">
+          {initialIntent ? (
+            <div
+              className={`flex items-start gap-3 rounded-2xl p-4 text-sm leading-6 ${
+                initialIntent === "confirm"
+                  ? "bg-lime-50 text-lime-950"
+                  : "bg-red-50 text-red-900"
+              }`}
+            >
+              <AlertTriangle className="mt-0.5 size-5 shrink-0" />
+              <p>
+                {initialIntent === "confirm"
+                  ? "You opened the confirm-payment link. Review the receipt, then deliberately confirm below to start production."
+                  : "You opened the reject-payment link. Review the receipt, add a private note if useful, then deliberately reject below."}
+              </p>
+            </div>
+          ) : null}
           <input type="hidden" name="orderId" value={orderId} />
           <div className="space-y-2">
             <Label htmlFor="paymentNote">Payment note (optional)</Label>
@@ -75,6 +101,11 @@ export function OrderControls({
               name="paymentStatus"
               value="confirmed"
               disabled={paymentPending}
+              className={
+                initialIntent === "confirm"
+                  ? "ring-2 ring-lime-500 ring-offset-2"
+                  : undefined
+              }
             >
               <ShieldCheck />
               {paymentPending
@@ -87,6 +118,11 @@ export function OrderControls({
               value="rejected"
               variant="outline"
               disabled={paymentPending}
+              className={
+                initialIntent === "reject"
+                  ? "border-red-400 text-red-700 ring-2 ring-red-300 ring-offset-2 hover:bg-red-50 hover:text-red-800"
+                  : undefined
+              }
             >
               <RotateCcw /> Reject proof
             </Button>
