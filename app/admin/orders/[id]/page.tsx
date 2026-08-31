@@ -5,7 +5,10 @@ import { OrderControls } from "@/components/admin/order-controls";
 import { ArchiveControls } from "@/components/admin/archive-controls";
 import { GenerationControls } from "@/components/admin/generation-controls";
 import { PosterDeliveryUploader } from "@/components/admin/poster-delivery-uploader";
-import { Badge } from "@/components/ui/badge";
+import {
+  OrderStatusBadge,
+  PaymentStatusBadge,
+} from "@/components/orders/status-badge";
 import { requireAdmin } from "@/lib/auth/guards";
 import { posterDeliveryLabel } from "@/lib/orders/delivery";
 import {
@@ -120,10 +123,8 @@ export default async function AdminOrderPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="outline" className="capitalize">
-            Payment: {order.payment_status.replaceAll("_", " ")}
-          </Badge>
-          <Badge variant="secondary">{ORDER_STATUS_LABELS[order.status]}</Badge>
+          <PaymentStatusBadge status={order.payment_status} prefix />
+          <OrderStatusBadge status={order.status} />
         </div>
       </div>
 

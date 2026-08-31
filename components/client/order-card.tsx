@@ -1,9 +1,8 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
+import { OrderStatusBadge } from "@/components/orders/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ORDER_STATUS_LABELS } from "@/lib/orders/status";
 import type { Database } from "@/lib/types/database";
 
 type Order = Database["public"]["Tables"]["orders"]["Row"];
@@ -31,7 +30,7 @@ export function OrderCard({ order }: { order: Order }) {
           <div className="text-sm text-neutral-500">
             {order.package_name_snapshot} · RM{order.package_price_snapshot}
           </div>
-          <Badge variant="secondary">{ORDER_STATUS_LABELS[order.status]}</Badge>
+          <OrderStatusBadge status={order.status} />
         </CardContent>
       </Card>
     </Link>

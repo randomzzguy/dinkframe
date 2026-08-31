@@ -2,14 +2,16 @@ import { Check, Download, Eye, FileImage, FileText } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { AmendmentForm } from "@/components/client/amendment-form";
-import { Badge } from "@/components/ui/badge";
+import {
+  OrderStatusBadge,
+  PaymentStatusBadge,
+} from "@/components/orders/status-badge";
 import { requireUser } from "@/lib/auth/guards";
 import {
   formatAnnouncementTone,
   formatFrameType,
   formatPlacement,
 } from "@/lib/orders/frame-types";
-import { ORDER_STATUS_LABELS } from "@/lib/orders/status";
 import type { OrderStatus } from "@/lib/types/domain";
 
 const timeline: { status: OrderStatus; label: string }[] = [
@@ -122,7 +124,7 @@ export default async function OrderDetailsPage({
             {order.player_name} — {order.tournament_name}
           </h1>
         </div>
-        <Badge variant="secondary">{ORDER_STATUS_LABELS[order.status]}</Badge>
+        <OrderStatusBadge status={order.status} />
       </div>
 
       {entitlement && (
@@ -311,7 +313,7 @@ export default async function OrderDetailsPage({
             />
             <Detail
               label="Payment"
-              value={order.payment_status.replaceAll("_", " ")}
+              value={<PaymentStatusBadge status={order.payment_status} />}
             />
             <Detail label="Color" value={order.color_preference} />
             <Detail label="Theme" value={order.theme_preference} />
@@ -469,7 +471,7 @@ export default async function OrderDetailsPage({
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <dt className="text-neutral-500">{label}</dt>

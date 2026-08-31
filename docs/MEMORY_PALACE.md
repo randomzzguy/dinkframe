@@ -79,6 +79,10 @@ the client independently supplied that wording as announcement copy.
 
 What happens: the owner confirms payment, produces the artwork, responds to amendments, delivers files, and prepares archives. Status follows those actions automatically.
 
+The overview cards are colored queue shortcuts. Each opens the shared order
+queue with an order or payment-state filter already applied; status colors are
+shared with client order cards and both admin/client detail views.
+
 Where it lives:
 
 - Routes: `app/admin`

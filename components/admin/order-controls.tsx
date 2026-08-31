@@ -7,10 +7,10 @@ import {
   changePaymentStatus,
   type AdminActionState,
 } from "@/app/admin/orders/[id]/actions";
+import { OrderStatusBadge } from "@/components/orders/status-badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ORDER_STATUS_LABELS } from "@/lib/orders/status";
 import type { OrderStatus, PaymentStatus } from "@/lib/types/domain";
 
 const initialState: AdminActionState = { status: "idle", message: "" };
@@ -41,9 +41,7 @@ export function OrderControls({
             the order, timeline, client update, and email automatically.
           </p>
         </div>
-        <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700">
-          {ORDER_STATUS_LABELS[currentStatus]}
-        </span>
+        <OrderStatusBadge status={currentStatus} />
       </div>
 
       {paymentConfirmed ? (

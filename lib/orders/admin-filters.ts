@@ -1,11 +1,12 @@
 import type { Database } from "@/lib/types/database";
-import type { OrderStatus } from "@/lib/types/domain";
+import type { OrderStatus, PaymentStatus } from "@/lib/types/domain";
 
 type Order = Database["public"]["Tables"]["orders"]["Row"];
 
 export type AdminOrderFilters = {
   query?: string;
   status?: OrderStatus;
+  paymentStatus?: PaymentStatus;
   packageId?: string;
   tournament?: string;
   player?: string;
@@ -24,6 +25,8 @@ export function filterAdminOrders(
 
   return orders.filter((order) => {
     if (filters.status && order.status !== filters.status) return false;
+    if (filters.paymentStatus && order.payment_status !== filters.paymentStatus)
+      return false;
     if (filters.packageId && order.package_id !== filters.packageId)
       return false;
     if (filters.dateFrom && order.created_at.slice(0, 10) < filters.dateFrom)

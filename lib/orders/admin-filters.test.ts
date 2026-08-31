@@ -14,6 +14,7 @@ const baseOrder = {
   whatsapp: "+60123456789",
   package_id: "package-1",
   status: "request_received",
+  payment_status: "proof_uploaded",
   created_at: "2026-08-20T10:00:00.000Z",
 } as Order;
 
@@ -36,6 +37,7 @@ describe("admin order filters", () => {
     expect(
       filterAdminOrders([baseOrder], emails, {
         status: "request_received",
+        paymentStatus: "proof_uploaded",
         packageId: "package-1",
         dateFrom: "2026-08-20",
         dateTo: "2026-08-20",
@@ -43,5 +45,18 @@ describe("admin order filters", () => {
         player: "aisyah",
       }),
     ).toHaveLength(1);
+  });
+
+  it("filters the awaiting-payment queue independently", () => {
+    expect(
+      filterAdminOrders([baseOrder], emails, {
+        paymentStatus: "proof_uploaded",
+      }),
+    ).toHaveLength(1);
+    expect(
+      filterAdminOrders([baseOrder], emails, {
+        paymentStatus: "confirmed",
+      }),
+    ).toHaveLength(0);
   });
 });
