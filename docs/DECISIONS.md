@@ -47,3 +47,14 @@ Studio automation defaults to `review_required`, where the local companion prepa
 Status: accepted.
 
 Hermes may schedule and report the repository-owned runner, but does not query Supabase or control job permissions directly. A dedicated bearer token reaches only the automation job API; service-role access stays inside Next.js. Playwright attaches to a dedicated localhost-only browser profile, and job leases make interrupted work recoverable. Prompt Studio output is copied manually into the image-generation stage, preserving the prohibition on automatic ChatGPT response extraction.
+
+## ADR-009 — Player identity is relational and photo-scoped
+
+Status: accepted.
+
+An order may contain one to six ordered players. `orders.player_name` remains a
+backward-compatible display/search summary, while `order_players` is the source
+of truth and each athlete photo references one player. The atomic submission
+function validates at least one photo per player and no more than eight total.
+Generation manifests repeat the player label beside every local reference path
+so multi-player image generation does not treat all faces as one anonymous pool.

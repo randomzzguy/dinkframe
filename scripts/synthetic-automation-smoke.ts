@@ -223,6 +223,7 @@ async function createSmokeOrder() {
       orderNumber: order.order_number,
       playerName: "Jordan Testframe",
       instagramHandle: "jordan_testframe",
+      players: [{ id: "synthetic-player", fullName: "Jordan Testframe" }],
       whatsapp: "+60000000000",
       tournamentName: "Synthetic DINK Open 2026",
       tournamentStartDate: "2026-09-15",

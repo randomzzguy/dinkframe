@@ -2,8 +2,11 @@ import type { UploadedAssetInput } from "./order";
 import { ANNOUNCEMENT_TONES, FRAME_TYPES } from "../orders/frame-types";
 
 export interface WizardDraftValidationInput {
-  playerName: string;
-  instagramHandle: string;
+  players: readonly {
+    id: string;
+    fullName: string;
+    instagramHandle: string;
+  }[];
   whatsapp: string;
   tournamentName: string;
   tournamentStartDate: string;
@@ -35,15 +38,18 @@ export function getOrderWizardStepError(
 ): string | null {
   if (
     step === 0 &&
-    (draft.playerName.trim().length < 2 ||
-      draft.playerName.trim().length > 120 ||
+    (draft.players.length < 1 ||
+      draft.players.length > 6 ||
+      draft.players.some(
+        (player) =>
+          player.fullName.trim().length < 2 ||
+          player.fullName.trim().length > 120 ||
+          player.instagramHandle.trim().length > 50,
+      ) ||
       draft.whatsapp.trim().length < 8 ||
       draft.whatsapp.trim().length > 30)
   ) {
-    return "Add a valid player name and WhatsApp number.";
-  }
-  if (step === 0 && draft.instagramHandle.trim().length > 50) {
-    return "Keep the Instagram handle under 50 characters.";
+    return "Add 1–6 valid players and a WhatsApp number.";
   }
 
   if (
@@ -116,8 +122,20 @@ export function getOrderWizardStepError(
     const count = assets.filter(
       (asset) => asset.assetType === "player_photo",
     ).length;
-    if (count < 2 || count > 8) {
-      return "Upload between two and eight player photos.";
+    if (count < 1 || count > 8) {
+      return "Upload between one and eight player photos.";
+    }
+    if (
+      draft.players.some(
+        (player) =>
+          !assets.some(
+            (asset) =>
+              asset.assetType === "player_photo" &&
+              asset.playerId === player.id,
+          ),
+      )
+    ) {
+      return "Upload at least one photo for every player.";
     }
   }
 

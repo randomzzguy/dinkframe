@@ -63,6 +63,12 @@ Where it lives:
 
 Rule to remember: the first frame should feel like `Upload → choose style → pay → done.` A confirmed multi-frame package then becomes `Upload → choose style → use frame credit → done`, with no duplicate receipt. The wizard is mobile-first, recovers form and uploaded-file metadata locally, uses resumable private uploads for larger files, and submits through an atomic PostgreSQL function.
 
+A poster may contain 1–6 players and up to eight athlete photos total. Every
+player needs at least one photo. `order_players` owns the ordered identities and
+`order_assets.player_id` keeps each original assigned to the correct athlete;
+the prompt and image manifests preserve those labels through Hermes. Instagram
+handles remain internal social-tagging metadata and never enter poster prompts.
+
 The Events step also owns the frame narrative. `upcoming_event` keeps the
 standard tournament/date/venue brief; `congratulations` requires a 1st–6th
 placement for every entered event; `announcement` requires a message brief and

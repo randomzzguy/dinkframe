@@ -512,6 +512,7 @@ async function queueGenerationJob({
   const { claims, supabase } = await requireAdmin();
   const [
     orderResult,
+    playerResult,
     eventResult,
     sponsorResult,
     assetResult,
@@ -519,6 +520,11 @@ async function queueGenerationJob({
     activeJobResult,
   ] = await Promise.all([
     supabase.from("orders").select("*").eq("id", orderId).maybeSingle(),
+    supabase
+      .from("order_players")
+      .select("id, full_name, sort_order")
+      .eq("order_id", orderId)
+      .order("sort_order"),
     supabase
       .from("order_event_details")
       .select("event_name, partner_name, placement")
@@ -549,6 +555,7 @@ async function queueGenerationJob({
 
   const lookupError =
     orderResult.error ??
+    playerResult.error ??
     eventResult.error ??
     sponsorResult.error ??
     assetResult.error ??
@@ -575,6 +582,9 @@ async function queueGenerationJob({
     };
   }
 
+  const playerNames = new Map(
+    (playerResult.data ?? []).map((player) => [player.id, player.full_name]),
+  );
   const allAssets: GenerationAssetManifestItem[] = (assetResult.data ?? []).map(
     (asset) => ({
       id: asset.id,
@@ -584,6 +594,10 @@ async function queueGenerationJob({
       originalFilename: asset.original_filename,
       mimeType: asset.mime_type,
       fileSize: asset.file_size,
+      playerId: asset.player_id,
+      playerName: asset.player_id
+        ? (playerNames.get(asset.player_id) ?? null)
+        : null,
     }),
   );
   const assetError = validateManifestForStage(stage, allAssets);
@@ -593,6 +607,10 @@ async function queueGenerationJob({
     orderNumber: order.order_number,
     playerName: order.player_name,
     instagramHandle: order.instagram_handle,
+    players: (playerResult.data ?? []).map((player) => ({
+      id: player.id,
+      fullName: player.full_name,
+    })),
     whatsapp: order.whatsapp,
     tournamentName: order.tournament_name,
     tournamentStartDate: order.tournament_start_date,

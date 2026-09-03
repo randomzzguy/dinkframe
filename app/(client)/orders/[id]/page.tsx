@@ -33,31 +33,42 @@ export default async function OrderDetailsPage({
   const { id } = await params;
   const { submitted } = await searchParams;
   const { supabase } = await requireUser();
-  const [orderResult, eventResult, assetResult, updateResult, amendmentResult] =
-    await Promise.all([
-      supabase.from("orders").select("*").eq("id", id).maybeSingle(),
-      supabase
-        .from("order_event_details")
-        .select("*")
-        .eq("order_id", id)
-        .order("sort_order"),
-      supabase
-        .from("order_assets")
-        .select("*")
-        .eq("order_id", id)
-        .order("created_at"),
-      supabase
-        .from("order_events")
-        .select("*")
-        .eq("order_id", id)
-        .eq("is_client_visible", true)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("amendments")
-        .select("*")
-        .eq("order_id", id)
-        .order("amendment_number", { ascending: false }),
-    ]);
+  const [
+    orderResult,
+    playerResult,
+    eventResult,
+    assetResult,
+    updateResult,
+    amendmentResult,
+  ] = await Promise.all([
+    supabase.from("orders").select("*").eq("id", id).maybeSingle(),
+    supabase
+      .from("order_players")
+      .select("id, full_name, sort_order")
+      .eq("order_id", id)
+      .order("sort_order"),
+    supabase
+      .from("order_event_details")
+      .select("*")
+      .eq("order_id", id)
+      .order("sort_order"),
+    supabase
+      .from("order_assets")
+      .select("*")
+      .eq("order_id", id)
+      .order("created_at"),
+    supabase
+      .from("order_events")
+      .select("*")
+      .eq("order_id", id)
+      .eq("is_client_visible", true)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("amendments")
+      .select("*")
+      .eq("order_id", id)
+      .order("amendment_number", { ascending: false }),
+  ]);
 
   const order = orderResult.data;
   if (!order) notFound();
@@ -103,6 +114,7 @@ export default async function OrderDetailsPage({
       ? entitlement.amendments_total - entitlement.amendments_used
       : order.free_amendments_total - order.free_amendments_used,
   );
+  const players = playerResult.data ?? [];
 
   return (
     <div>
@@ -296,6 +308,10 @@ export default async function OrderDetailsPage({
         <section className="rounded-2xl border border-black/10 bg-white p-6">
           <h2 className="font-bold">Order overview</h2>
           <dl className="mt-5 grid grid-cols-2 gap-5 text-sm">
+            <Detail
+              label={players.length === 1 ? "Player" : "Players"}
+              value={players.map((player) => player.full_name).join(", ")}
+            />
             <Detail label="Tournament" value={order.tournament_name} />
             <Detail
               label="Frame type"
@@ -402,7 +418,9 @@ export default async function OrderDetailsPage({
                     {asset.original_filename}
                   </p>
                   <p className="mt-1 text-xs text-neutral-500">
-                    {asset.asset_type.replaceAll("_", " ")}
+                    {asset.asset_type === "player_photo"
+                      ? `Player photo · ${players.find((player) => player.id === asset.player_id)?.full_name ?? "Player"}`
+                      : asset.asset_type.replaceAll("_", " ")}
                   </p>
                 </div>
                 {asset.signedUrl && (

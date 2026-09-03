@@ -28,6 +28,10 @@ export type GenerationBriefSnapshot = {
   orderNumber: string;
   playerName: string;
   instagramHandle: string | null;
+  players?: Array<{
+    id: string;
+    fullName: string;
+  }>;
   whatsapp: string;
   tournamentName: string;
   tournamentStartDate: string;
@@ -65,14 +69,16 @@ export type GenerationAssetManifestItem = {
   originalFilename: string;
   mimeType: string;
   fileSize: number;
+  playerId?: string | null;
+  playerName?: string | null;
 };
 
 export type ClaimedGenerationAsset = GenerationAssetManifestItem & {
   downloadUrl: string;
 };
 
-export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v13";
-export const IMAGE_GENERATION_TEMPLATE_VERSION = "image-generation-v2";
+export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v14";
+export const IMAGE_GENERATION_TEMPLATE_VERSION = "image-generation-v3";
 
 export const GENERATION_STAGE_LABELS: Record<GenerationJobStage, string> = {
   prompt_generation: "Prompt Studio",
@@ -93,7 +99,7 @@ export function buildPromptStudioMessage(snapshot: GenerationBriefSnapshot) {
   const lines = [
     "Prepare the complete production prompt for this DINKFRAME pickleball poster order.",
     "Use the attached tournament/event logo as a visual reference.",
-    "Player photos are intentionally withheld from this prompt-preparation chat but will be supplied during image generation. Direct the image model to use those exact player references; never assume they are missing and never substitute an anonymous athlete.",
+    "Player photos are intentionally withheld from this prompt-preparation chat but will be supplied during image generation in clearly named player groups. Direct the image model to use every exact player reference, preserve each identity independently, never merge faces, swap bodies, or omit a selected player, and never substitute an anonymous athlete.",
     "Do not generate an image in this conversation. Return the polished image-generation prompt only.",
     "Keep the final prompt between 350 and 650 words. Make the selected theme unmistakable through composition, typography, and graphic language—not color alone.",
     "Treat theme and color as independent creative controls. Apply the specific theme recipe and a deliberate palette recipe; do not fall back to the same dark-arena layout for every selection.",
@@ -109,7 +115,12 @@ export function buildPromptStudioMessage(snapshot: GenerationBriefSnapshot) {
     "For culturally inspired themes, include a hard TEXT EXCLUSION: render zero unsupplied languages, faux glyphs, seals, stamps, or pseudo-writing. Build the theme through composition, materials, geometry, rhythm, and supplied copy only.",
     "Keep every protected asset, athlete body part, and required text inside a centered 4:5 crop-safe region, with only expendable background outside it.",
     "",
-    `Player: ${snapshot.playerName}`,
+    `${getPlayers(snapshot).length === 1 ? "Player" : "Players"}: ${getPlayers(
+      snapshot,
+    )
+      .map((player) => player.fullName)
+      .join(", ")}`,
+    `Athlete composition: ${formatAthleteComposition(snapshot)}`,
     `Internal frame-type routing (NEVER VISIBLE COPY): ${formatFrameType(snapshot.frameType)}`,
     `Internal frame-type direction (NEVER VISIBLE COPY): ${formatFrameTypeDirection(snapshot)}`,
     `Tournament: ${snapshot.tournamentName}`,
@@ -158,8 +169,8 @@ export function validateManifestForStage(
   if (tournamentLogos < 1) {
     return "Upload a tournament logo before queuing this stage.";
   }
-  if (stage === "image_generation" && playerPhotos < 2) {
-    return "At least two player photos are required for image generation.";
+  if (stage === "image_generation" && playerPhotos < 1) {
+    return "At least one player photo is required for image generation.";
   }
   return null;
 }
@@ -199,9 +210,29 @@ export function isGenerationAssetManifest(
         typeof item.storagePath === "string" &&
         typeof item.originalFilename === "string" &&
         typeof item.mimeType === "string" &&
-        typeof item.fileSize === "number",
+        typeof item.fileSize === "number" &&
+        (item.playerId === undefined ||
+          item.playerId === null ||
+          typeof item.playerId === "string") &&
+        (item.playerName === undefined ||
+          item.playerName === null ||
+          typeof item.playerName === "string"),
     )
   );
+}
+
+function getPlayers(snapshot: GenerationBriefSnapshot) {
+  return snapshot.players?.length
+    ? snapshot.players
+    : [{ id: "legacy-primary-player", fullName: snapshot.playerName }];
+}
+
+function formatAthleteComposition(snapshot: GenerationBriefSnapshot) {
+  const players = getPlayers(snapshot);
+  if (players.length === 1) {
+    return "Build the poster around this athlete as the unmistakable primary subject, using the supplied reference photos exactly.";
+  }
+  return `Create one coherent multi-athlete composition featuring all ${players.length} supplied players with recognizable, undistorted identities and intentional visual balance. Give every player meaningful presence; do not duplicate, merge, replace, or omit anyone.`;
 }
 
 function formatEvents(events: GenerationBriefSnapshot["events"]) {

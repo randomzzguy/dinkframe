@@ -290,6 +290,30 @@ export type Database = {
         >;
         Relationships: [];
       };
+      order_players: {
+        Row: {
+          id: string;
+          order_id: string;
+          client_key: string;
+          full_name: string;
+          instagram_handle: string | null;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          client_key: string;
+          full_name: string;
+          instagram_handle?: string | null;
+          sort_order: number;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["order_players"]["Insert"]
+        >;
+        Relationships: [];
+      };
       order_assets: {
         Row: {
           id: string;
@@ -300,6 +324,7 @@ export type Database = {
           original_filename: string;
           mime_type: string;
           file_size: number;
+          player_id: string | null;
           is_temporary: boolean;
           created_at: string;
         };
@@ -312,6 +337,7 @@ export type Database = {
           original_filename: string;
           mime_type: string;
           file_size: number;
+          player_id?: string | null;
           is_temporary?: boolean;
           created_at?: string;
         };

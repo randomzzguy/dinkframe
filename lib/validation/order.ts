@@ -28,15 +28,20 @@ export const sponsorSchema = z.object({
   companyName: z.string().trim().min(2).max(120),
 });
 
+export const orderPlayerSchema = z.object({
+  id: z.uuid(),
+  fullName: z.string().trim().min(2).max(120),
+  instagramHandle: z
+    .string()
+    .trim()
+    .max(50)
+    .transform((value) => value.replace(/^@/, ""))
+    .optional(),
+});
+
 export const orderDraftSchema = z
   .object({
-    playerName: z.string().trim().min(2).max(120),
-    instagramHandle: z
-      .string()
-      .trim()
-      .max(50)
-      .transform((value) => value.replace(/^@/, ""))
-      .optional(),
+    players: z.array(orderPlayerSchema).min(1).max(6),
     whatsapp: z.string().trim().min(8).max(30),
     tournamentName: z.string().trim().min(2).max(160),
     tournamentStartDate: z.iso.date(),
@@ -78,6 +83,17 @@ export const orderDraftSchema = z
     },
   )
   .superRefine((value, context) => {
+    if (
+      new Set(value.players.map((player) => player.id)).size !==
+      value.players.length
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Every player must have a unique reference.",
+        path: ["players"],
+      });
+    }
+
     if (value.frameType === "congratulations") {
       value.events.forEach((event, index) => {
         if (!event.placement) {
@@ -115,13 +131,14 @@ export const uploadedAssetSchema = z.object({
   originalFilename: z.string().min(1).max(255),
   mimeType: z.string().min(1).max(120),
   fileSize: z.number().int().positive(),
+  playerId: z.uuid().optional(),
 });
 
 export const orderSubmissionSchema = z
   .object({
     draftId: z.uuid(),
     order: orderDraftSchema,
-    assets: z.array(uploadedAssetSchema).min(3).max(20),
+    assets: z.array(uploadedAssetSchema).min(2).max(20),
   })
   .superRefine((value, context) => {
     const playerPhotoCount = value.assets.filter(
@@ -137,10 +154,32 @@ export const orderSubmissionSchema = z
       (asset) => asset.assetType === "sponsor_logo",
     ).length;
 
-    if (playerPhotoCount < 2 || playerPhotoCount > 8) {
+    if (playerPhotoCount < 1 || playerPhotoCount > 8) {
       context.addIssue({
         code: "custom",
-        message: "Upload between two and eight player photos.",
+        message: "Upload between one and eight player photos.",
+        path: ["assets"],
+      });
+    }
+
+    const playerIds = new Set(value.order.players.map((player) => player.id));
+    const assignedPlayerIds = new Set(
+      value.assets
+        .filter((asset) => asset.assetType === "player_photo")
+        .map((asset) => asset.playerId),
+    );
+    if (
+      value.assets.some(
+        (asset) =>
+          (asset.assetType === "player_photo" &&
+            (!asset.playerId || !playerIds.has(asset.playerId))) ||
+          (asset.assetType !== "player_photo" && asset.playerId),
+      ) ||
+      value.order.players.some((player) => !assignedPlayerIds.has(player.id))
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Upload at least one photo for every player.",
         path: ["assets"],
       });
     }

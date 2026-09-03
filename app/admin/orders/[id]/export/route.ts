@@ -41,13 +41,18 @@ export async function GET(
     });
   }
 
-  const [profile, events, sponsors, assets, amendments, history] =
+  const [profile, players, events, sponsors, assets, amendments, history] =
     await Promise.all([
       supabase
         .from("profiles")
         .select("email, full_name, whatsapp, instagram_handle")
         .eq("id", order.client_id)
         .maybeSingle(),
+      supabase
+        .from("order_players")
+        .select("*")
+        .eq("order_id", id)
+        .order("sort_order"),
       supabase
         .from("order_event_details")
         .select("*")
@@ -73,6 +78,7 @@ export async function GET(
 
   const queryError = [
     profile,
+    players,
     events,
     sponsors,
     assets,
@@ -103,6 +109,7 @@ export async function GET(
     supabase,
     order,
     profile: profile.data,
+    players: players.data ?? [],
     events: events.data ?? [],
     sponsors: sponsors.data ?? [],
     assets: assets.data ?? [],
@@ -138,6 +145,7 @@ async function writeArchive({
   supabase,
   order,
   profile,
+  players,
   events,
   sponsors,
   assets,
@@ -151,6 +159,7 @@ async function writeArchive({
     Database["public"]["Tables"]["profiles"]["Row"],
     "email" | "full_name" | "whatsapp" | "instagram_handle"
   > | null;
+  players: Database["public"]["Tables"]["order_players"]["Row"][];
   events: Database["public"]["Tables"]["order_event_details"]["Row"][];
   sponsors: Database["public"]["Tables"]["sponsors"]["Row"][];
   assets: OrderAsset[];
@@ -162,6 +171,7 @@ async function writeArchive({
     order,
     client: profile,
   });
+  appendJson(archive, "metadata/players.json", players);
   appendJson(archive, "metadata/events.json", events);
   appendJson(archive, "metadata/sponsors.json", sponsors);
   appendJson(archive, "metadata/amendments.json", amendments);

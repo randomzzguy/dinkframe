@@ -97,11 +97,7 @@ async function main() {
     if (job.stage === "prompt_generation") {
       await runPromptJob(job, inputPath, localAssets);
     } else {
-      await runImageJob(
-        job,
-        inputPath,
-        localAssets.map((asset) => asset.localPath),
-      );
+      await runImageJob(job, inputPath, localAssets);
     }
   } catch (error) {
     const message =
@@ -168,15 +164,20 @@ async function runPromptJob(
 async function runImageJob(
   job: ClaimedJob,
   inputPath: string,
-  assetPaths: string[],
+  assets: Array<ClaimedGenerationAsset & { localPath: string }>,
 ) {
+  const referenceManifest = assets.map((asset) =>
+    asset.assetType === "player_photo"
+      ? `PLAYER REFERENCE — ${asset.playerName ?? "primary player"}: ${asset.localPath}`
+      : `TOURNAMENT LOGO: ${asset.localPath}`,
+  );
   const instruction = [
     "Image mode. The owner explicitly approved the exact prompt stored at:",
     inputPath,
     "Read it without rewriting it. Generate exactly one portrait draft using image_generate.",
     "Enforce the prompt's factual-text lock as a hard constraint: do not fill negative space with unsupplied writing, faux glyphs, seals, stamps, or invented symbols.",
-    "Use these reference images in this exact manifest order:",
-    ...assetPaths,
+    "Use these reference images in this exact manifest order. Player labels are authoritative: never mix one player’s photos with another player’s identity:",
+    ...referenceManifest,
     "Use the configured openai-codex image provider. Return only the saved image path. Do not retry and do not use another provider.",
   ].join("\n");
   const output = await runHermes(instruction);

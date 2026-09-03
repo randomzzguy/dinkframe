@@ -4,9 +4,10 @@ import { orderDraftSchema, orderSubmissionSchema } from "./order";
 
 const draftId = "00000000-0000-4000-8000-000000000000";
 const entitlementId = "00000000-0000-4000-8000-000000000001";
+const playerId = "00000000-0000-4000-8000-000000000002";
 
 const order = {
-  playerName: "Jamie Lee",
+  players: [{ id: playerId, fullName: "Jamie Lee" }],
   whatsapp: "+60123456789",
   tournamentName: "Kuala Lumpur Open",
   tournamentStartDate: "2026-09-10",
@@ -22,8 +23,7 @@ const order = {
 };
 
 const standardAssets = [
-  asset("player_photo", "order-assets", "player-a.png"),
-  asset("player_photo", "order-assets", "player-b.png"),
+  asset("player_photo", "order-assets", "player-a.png", playerId),
   asset("tournament_logo", "order-assets", "logo.png"),
   asset("payment_proof", "payment-proofs", "receipt.png"),
 ];
@@ -31,6 +31,27 @@ const standardAssets = [
 describe("order draft validation", () => {
   it("accepts the existing upcoming-event brief", () => {
     expect(orderDraftSchema.safeParse(order).success).toBe(true);
+  });
+
+  it("supports up to six named players", () => {
+    expect(
+      orderDraftSchema.safeParse({
+        ...order,
+        players: Array.from({ length: 6 }, (_, index) => ({
+          id: `00000000-0000-4000-8000-00000000000${index + 2}`,
+          fullName: `Player ${index + 1}`,
+        })),
+      }).success,
+    ).toBe(true);
+    expect(
+      orderDraftSchema.safeParse({
+        ...order,
+        players: Array.from({ length: 7 }, (_, index) => ({
+          id: `00000000-0000-4000-8000-00000000000${index + 2}`,
+          fullName: `Player ${index + 1}`,
+        })),
+      }).success,
+    ).toBe(false);
   });
 
   it("requires a placement for each congratulations event", () => {
@@ -66,6 +87,16 @@ describe("order draft validation", () => {
 });
 
 describe("order submission payment validation", () => {
+  it("accepts one photo for a one-player poster", () => {
+    expect(
+      orderSubmissionSchema.safeParse({
+        draftId,
+        order,
+        assets: standardAssets,
+      }).success,
+    ).toBe(true);
+  });
+
   it("requires a receipt for a new package purchase", () => {
     const result = orderSubmissionSchema.safeParse({
       draftId,
@@ -98,6 +129,7 @@ function asset(
   assetType: "player_photo" | "tournament_logo" | "payment_proof",
   bucketId: "order-assets" | "payment-proofs",
   filename: string,
+  playerId?: string,
 ) {
   return {
     assetType,
@@ -106,5 +138,6 @@ function asset(
     originalFilename: filename,
     mimeType: "image/png",
     fileSize: 1024,
+    playerId,
   };
 }

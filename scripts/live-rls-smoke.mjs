@@ -35,8 +35,12 @@ try {
   const secondUser = await createTestUser(
     `dinkframe-rls-b-${runId}@example.com`,
   );
+  const thirdUser = await createTestUser(
+    `dinkframe-rls-c-${runId}@example.com`,
+  );
   const firstClient = await signedInClient(firstUser.email);
   const secondClient = await signedInClient(secondUser.email);
+  const thirdClient = await signedInClient(thirdUser.email);
 
   const { data: draft, error: draftError } = await firstClient
     .from("order_drafts")
@@ -276,6 +280,51 @@ try {
   assertNoError(workflowOrderError, "could not create workflow smoke order");
   workflowOrderId = workflowOrder.id;
 
+  const { data: workflowPlayer, error: workflowPlayerError } = await admin
+    .from("order_players")
+    .insert({
+      order_id: workflowOrderId,
+      client_key: randomUUID(),
+      full_name: "RLS Workflow Test",
+      sort_order: 0,
+    })
+    .select("id")
+    .single();
+  assertNoError(workflowPlayerError, "admin could not create an order player");
+
+  const { data: ownPlayers, error: ownPlayersError } = await secondClient
+    .from("order_players")
+    .select("id")
+    .eq("order_id", workflowOrderId);
+  assertNoError(ownPlayersError, "client could not read their order players");
+  assert(
+    ownPlayers.length === 1 && ownPlayers[0].id === workflowPlayer.id,
+    "client did not receive their own order player",
+  );
+
+  const { data: foreignPlayers, error: foreignPlayersError } = await thirdClient
+    .from("order_players")
+    .select("id")
+    .eq("order_id", workflowOrderId);
+  assertNoError(
+    foreignPlayersError,
+    "foreign order-player query failed unexpectedly",
+  );
+  assert(
+    foreignPlayers.length === 0,
+    "a client could read another order's players",
+  );
+
+  const { error: forgedPlayerError } = await secondClient
+    .from("order_players")
+    .insert({
+      order_id: workflowOrderId,
+      client_key: randomUUID(),
+      full_name: "Forged Player",
+      sort_order: 1,
+    });
+  assert(forgedPlayerError, "a client could forge an order player");
+
   const { data: creditEntitlement, error: creditEntitlementError } = await admin
     .from("frame_entitlements")
     .insert({
@@ -337,9 +386,9 @@ try {
     .select("id")
     .single();
   assertNoError(creditDraftError, "could not create credit-funded draft");
+  const creditPlayerId = randomUUID();
   const creditAssetSpecs = [
     ["player_photo", "player-a.png"],
-    ["player_photo", "player-b.png"],
     ["tournament_logo", "tournament.png"],
   ];
   const creditAssets = [];
@@ -361,6 +410,7 @@ try {
       originalFilename: filename,
       mimeType: "image/png",
       fileSize: bytes.byteLength,
+      ...(assetType === "player_photo" ? { playerId: creditPlayerId } : {}),
     });
   }
   const { data: creditOrder, error: creditOrderError } = await secondClient.rpc(
@@ -368,7 +418,12 @@ try {
     {
       target_draft_id: creditDraft.id,
       order_payload: {
-        playerName: "Credit Workflow Test",
+        players: [
+          {
+            id: creditPlayerId,
+            fullName: "Credit Workflow Test",
+          },
+        ],
         whatsapp: "+60112223333",
         tournamentName: "Credit Open",
         tournamentStartDate: "2026-10-15",

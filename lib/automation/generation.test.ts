@@ -12,6 +12,7 @@ const snapshot: GenerationBriefSnapshot = {
   orderNumber: "DF-2026-0042",
   playerName: "Aisyah Lee",
   instagramHandle: "aisyah",
+  players: [{ id: "player-1", fullName: "Aisyah Lee" }],
   whatsapp: "+60123456789",
   tournamentName: "Dink Open",
   tournamentStartDate: "2026-09-01",
@@ -134,17 +135,25 @@ describe("generation automation", () => {
     ).toBe("tournament_logo");
   });
 
-  it("requires a logo and two player photos for image generation", () => {
+  it("requires a logo and at least one player photo for image generation", () => {
     const incomplete = [asset("tournament_logo"), asset("player_photo")];
-    expect(validateManifestForStage("image_generation", incomplete)).toMatch(
-      /two player photos/i,
-    );
-
+    expect(validateManifestForStage("image_generation", incomplete)).toBeNull();
     expect(
-      validateManifestForStage("image_generation", [
-        ...incomplete,
-        asset("player_photo"),
-      ]),
-    ).toBeNull();
+      validateManifestForStage("image_generation", [asset("tournament_logo")]),
+    ).toMatch(/one player photo/i);
+  });
+
+  it("directs the model to preserve every player in a group poster", () => {
+    const message = buildPromptStudioMessage({
+      ...snapshot,
+      players: [
+        { id: "player-1", fullName: "Aisyah Lee" },
+        { id: "player-2", fullName: "Alex Tan" },
+      ],
+    });
+
+    expect(message).toContain("Players: Aisyah Lee, Alex Tan");
+    expect(message).toContain("all 2 supplied players");
+    expect(message).toContain("never merge faces");
   });
 });

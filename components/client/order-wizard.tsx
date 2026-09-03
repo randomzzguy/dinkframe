@@ -68,10 +68,14 @@ type DraftEvent = {
   placement: string;
 };
 type DraftSponsor = { id: string; companyName: string };
+type DraftPlayer = {
+  id: string;
+  fullName: string;
+  instagramHandle: string;
+};
 
 type Draft = {
-  playerName: string;
-  instagramHandle: string;
+  players: DraftPlayer[];
   whatsapp: string;
   tournamentName: string;
   tournamentStartDate: string;
@@ -136,8 +140,13 @@ function createBlankDraft(
   frameCredits: FrameCreditOption[],
 ): Draft {
   return {
-    playerName: initialProfile.fullName ?? "",
-    instagramHandle: initialProfile.instagramHandle ?? "",
+    players: [
+      {
+        id: crypto.randomUUID(),
+        fullName: initialProfile.fullName ?? "",
+        instagramHandle: initialProfile.instagramHandle ?? "",
+      },
+    ],
     whatsapp: initialProfile.whatsapp ?? "",
     tournamentName: "",
     tournamentStartDate: "",
@@ -238,7 +247,10 @@ export function OrderWizard({
       if (saved) {
         try {
           const parsed = JSON.parse(saved) as {
-            draft?: Partial<Draft>;
+            draft?: Partial<Draft> & {
+              playerName?: string;
+              instagramHandle?: string;
+            };
             draftId?: string;
             assets?: UploadedAssetInput[];
           };
@@ -248,9 +260,25 @@ export function OrderWizard({
             frameCredits,
           );
           const savedEntitlementId = parsed.draft?.frameEntitlementId ?? "";
+          const savedPlayers = parsed.draft?.players?.length
+            ? parsed.draft.players
+            : [
+                {
+                  id: crypto.randomUUID(),
+                  fullName:
+                    parsed.draft?.playerName ??
+                    blankDraft.players[0]?.fullName ??
+                    "",
+                  instagramHandle:
+                    parsed.draft?.instagramHandle ??
+                    blankDraft.players[0]?.instagramHandle ??
+                    "",
+                },
+              ];
           setDraft({
             ...blankDraft,
             ...parsed.draft,
+            players: savedPlayers,
             frameEntitlementId: frameCredits.some(
               (credit) => credit.id === savedEntitlementId,
             )
@@ -261,7 +289,13 @@ export function OrderWizard({
             ),
           });
           setDraftId(parsed.draftId);
-          setAssets(parsed.assets ?? []);
+          setAssets(
+            (parsed.assets ?? []).map((asset) =>
+              asset.assetType === "player_photo" && !asset.playerId
+                ? { ...asset, playerId: savedPlayers[0]?.id }
+                : asset,
+            ),
+          );
         } catch {
           window.localStorage.removeItem(storageKey);
         }
@@ -319,6 +353,7 @@ export function OrderWizard({
   const handleFiles = async (
     assetType: UploadableAssetType,
     fileList: FileList | null,
+    playerId?: string,
   ) => {
     const files = Array.from(fileList ?? []);
     if (!files.length) return;
@@ -349,6 +384,7 @@ export function OrderWizard({
           draftId: activeDraftId,
           file,
           assetType,
+          playerId,
           onProgress(percentage) {
             setUploadProgress((current) => ({
               ...current,
@@ -421,6 +457,35 @@ export function OrderWizard({
     }
   };
 
+  const removePlayer = async (playerId: string) => {
+    if (draft.players.length <= 1) return;
+    const playerAssets = playerPhotos.filter(
+      (asset) => asset.playerId === playerId,
+    );
+    try {
+      await Promise.all(playerAssets.map((asset) => removeOrderAsset(asset)));
+      for (const asset of playerAssets) {
+        const preview = previewUrls[asset.storagePath];
+        if (preview) URL.revokeObjectURL(preview);
+      }
+      setPreviewUrls((current) => {
+        const next = { ...current };
+        for (const asset of playerAssets) delete next[asset.storagePath];
+        return next;
+      });
+      setAssets((current) =>
+        current.filter((asset) => asset.playerId !== playerId),
+      );
+      setDraft((current) => ({
+        ...current,
+        players: current.players.filter((player) => player.id !== playerId),
+      }));
+      setMessage(undefined);
+    } catch {
+      setMessage("We couldn't remove that player’s uploaded photos.");
+    }
+  };
+
   const selectFrameCredit = async (entitlementId: string) => {
     const receipts = assets.filter(
       (asset) => asset.assetType === "payment_proof",
@@ -479,8 +544,11 @@ export function OrderWizard({
       try {
         const activeDraftId = await ensureDraft();
         const order: OrderDraftInput = {
-          playerName: draft.playerName,
-          instagramHandle: draft.instagramHandle,
+          players: draft.players.map((player) => ({
+            id: player.id,
+            fullName: player.fullName,
+            instagramHandle: player.instagramHandle || undefined,
+          })),
           whatsapp: draft.whatsapp,
           tournamentName: draft.tournamentName,
           tournamentStartDate: draft.tournamentStartDate,
@@ -628,25 +696,94 @@ export function OrderWizard({
 
         <div className="mt-8 min-h-80">
           {step === 0 && (
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field
-                label="Player full name"
-                value={draft.playerName}
-                onChange={(value) => update("playerName", value)}
-                required
-              />
-              <Field
-                label="Instagram handle"
-                value={draft.instagramHandle}
-                onChange={(value) => update("instagramHandle", value)}
-                placeholder="@player"
-              />
-              <Field
-                label="WhatsApp number"
-                value={draft.whatsapp}
-                onChange={(value) => update("whatsapp", value)}
-                required
-              />
+            <div className="space-y-6">
+              <div>
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold">Players on this poster</h3>
+                    <p className="mt-1 text-sm text-neutral-500">
+                      Add between one and six players. Instagram handles are
+                      stored only for social tagging and are not poster copy.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">
+                    {draft.players.length} / 6 players
+                  </span>
+                </div>
+              </div>
+
+              {draft.players.map((player, index) => (
+                <div
+                  key={player.id}
+                  className="grid gap-4 rounded-2xl border border-black/10 bg-neutral-50 p-5 sm:grid-cols-[1fr_1fr_auto]"
+                >
+                  <Field
+                    id={`player-${player.id}-name`}
+                    label={`Player ${index + 1} full name`}
+                    value={player.fullName}
+                    onChange={(value) =>
+                      updatePlayer(draft, update, player.id, "fullName", value)
+                    }
+                    required
+                  />
+                  <Field
+                    id={`player-${player.id}-instagram`}
+                    label="Instagram handle"
+                    value={player.instagramHandle}
+                    onChange={(value) =>
+                      updatePlayer(
+                        draft,
+                        update,
+                        player.id,
+                        "instagramHandle",
+                        value,
+                      )
+                    }
+                    placeholder="@player"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="self-end"
+                    aria-label={`Remove player ${index + 1}`}
+                    disabled={draft.players.length === 1 || isUploading}
+                    onClick={() => void removePlayer(player.id)}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                disabled={draft.players.length >= 6 || isUploading}
+                onClick={() =>
+                  update("players", [
+                    ...draft.players,
+                    {
+                      id: crypto.randomUUID(),
+                      fullName: "",
+                      instagramHandle: "",
+                    },
+                  ])
+                }
+              >
+                <Plus /> Add another player
+              </Button>
+
+              <div className="max-w-md">
+                <Field
+                  label="WhatsApp number"
+                  value={draft.whatsapp}
+                  onChange={(value) => update("whatsapp", value)}
+                  required
+                />
+                <p className="mt-2 text-xs text-neutral-500">
+                  We’ll use this number as the contact for the whole order.
+                </p>
+              </div>
             </div>
           )}
 
@@ -846,20 +983,52 @@ export function OrderWizard({
 
           {step === 3 && (
             <div className="space-y-5">
-              <UploadArea
-                title="Player photos"
-                note="Upload 2–8 clear, high-resolution photos. Originals are preserved; large files resume automatically."
-                accept="image/jpeg,image/png,image/webp"
-                multiple
-                onFiles={(files) => void handleFiles("player_photo", files)}
-                disabled={isUploading}
-              />
+              <div className="rounded-2xl border border-lime-300 bg-lime-50 p-4 text-sm leading-6 text-lime-950">
+                Upload at least one clear photo for every player, with a maximum
+                of eight photos across the entire poster. Originals are
+                preserved.
+              </div>
+              {draft.players.map((player, index) => {
+                const photos = playerPhotos.filter(
+                  (asset) => asset.playerId === player.id,
+                );
+                return (
+                  <section
+                    key={player.id}
+                    className="space-y-4 rounded-2xl border border-black/10 p-5"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold tracking-wider text-neutral-500 uppercase">
+                          Player {index + 1}
+                        </p>
+                        <h3 className="mt-1 text-lg font-bold">
+                          {player.fullName || `Player ${index + 1}`}
+                        </h3>
+                      </div>
+                      <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold">
+                        {photos.length} photo{photos.length === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    <UploadArea
+                      title={`Upload photos for ${player.fullName || `Player ${index + 1}`}`}
+                      note="JPEG, PNG, or WebP. Clear full-body and action shots work best."
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      onFiles={(files) =>
+                        void handleFiles("player_photo", files, player.id)
+                      }
+                      disabled={isUploading || playerPhotos.length >= 8}
+                    />
+                    <AssetList
+                      assets={photos}
+                      previewUrls={previewUrls}
+                      onRemove={removeAsset}
+                    />
+                  </section>
+                );
+              })}
               <UploadProgress progress={uploadProgress} />
-              <AssetList
-                assets={playerPhotos}
-                previewUrls={previewUrls}
-                onRemove={removeAsset}
-              />
             </div>
           )}
 
@@ -1250,7 +1419,12 @@ export function OrderWizard({
                 )}
               </div>
               <div className="grid gap-5 rounded-xl bg-neutral-100 p-5 sm:grid-cols-2">
-                <ReviewItem label="Player" value={draft.playerName} />
+                <ReviewItem
+                  label={draft.players.length === 1 ? "Player" : "Players"}
+                  value={draft.players
+                    .map((player) => player.fullName)
+                    .join(", ")}
+                />
                 <ReviewItem label="Tournament" value={draft.tournamentName} />
                 <ReviewItem
                   label="Frame type"
@@ -1286,7 +1460,7 @@ export function OrderWizard({
                 />
                 <ReviewItem
                   label="Files"
-                  value={`${playerPhotos.length} player photos · ${tournamentLogos.length} tournament logo · ${selectedFrameCredit ? "no new payment proof needed" : `${paymentProofs.length} payment proof`}`}
+                  value={`${playerPhotos.length} player photo${playerPhotos.length === 1 ? "" : "s"} across ${draft.players.length} player${draft.players.length === 1 ? "" : "s"} · ${tournamentLogos.length} tournament logo · ${selectedFrameCredit ? "no new payment proof needed" : `${paymentProofs.length} payment proof`}`}
                 />
               </div>
               <label className="flex items-start gap-3 rounded-xl border border-black/10 p-4 text-sm">
@@ -1445,10 +1619,24 @@ function PaymentDetail({
 
 function hasDraftContent(draft: Draft) {
   return Boolean(
-    draft.playerName ||
+    draft.players.some((player) => player.fullName || player.instagramHandle) ||
     draft.whatsapp ||
     draft.tournamentName ||
     draft.customNotes,
+  );
+}
+function updatePlayer(
+  draft: Draft,
+  update: <Key extends keyof Draft>(field: Key, value: Draft[Key]) => void,
+  id: string,
+  field: "fullName" | "instagramHandle",
+  value: string,
+) {
+  update(
+    "players",
+    draft.players.map((player) =>
+      player.id === id ? { ...player, [field]: value } : player,
+    ),
   );
 }
 function updateEvent(
@@ -1486,6 +1674,7 @@ function titleCase(value: string) {
 }
 
 function Field({
+  id: suppliedId,
   label,
   value,
   onChange,
@@ -1493,6 +1682,7 @@ function Field({
   required = false,
   placeholder,
 }: {
+  id?: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -1500,7 +1690,8 @@ function Field({
   required?: boolean;
   placeholder?: string;
 }) {
-  const id = label.toLowerCase().replaceAll(" ", "-").replaceAll("/", "-");
+  const id =
+    suppliedId ?? label.toLowerCase().replaceAll(" ", "-").replaceAll("/", "-");
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>

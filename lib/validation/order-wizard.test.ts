@@ -6,9 +6,10 @@ import {
   type WizardDraftValidationInput,
 } from "./order-wizard";
 
+const playerId = "00000000-0000-4000-8000-000000000002";
+
 const completeDraft: WizardDraftValidationInput = {
-  playerName: "Jamie Lee",
-  instagramHandle: "@jamie",
+  players: [{ id: playerId, fullName: "Jamie Lee", instagramHandle: "@jamie" }],
   whatsapp: "+60123456789",
   tournamentName: "Kuala Lumpur Open",
   tournamentStartDate: "2026-09-10",
@@ -30,8 +31,7 @@ const completeDraft: WizardDraftValidationInput = {
 
 const assets: UploadedAssetInput[] = [
   asset("tournament_logo", "order-assets", "logo.png"),
-  asset("player_photo", "order-assets", "player-1.png"),
-  asset("player_photo", "order-assets", "player-2.png"),
+  asset("player_photo", "order-assets", "player-1.png", playerId),
   asset("payment_proof", "payment-proofs", "receipt.png"),
 ];
 
@@ -51,6 +51,31 @@ describe("order wizard step validation", () => {
     expect(getOrderWizardStepError(1, incompleteDraft, assets)).toBe(
       "Complete the tournament name, dates, and location.",
     );
+  });
+
+  it("requires one assigned photo for every selected player", () => {
+    const secondPlayerId = "00000000-0000-4000-8000-000000000003";
+    const twoPlayers = {
+      ...completeDraft,
+      players: [
+        ...completeDraft.players,
+        {
+          id: secondPlayerId,
+          fullName: "Alex Tan",
+          instagramHandle: "",
+        },
+      ],
+    };
+
+    expect(getOrderWizardStepError(3, twoPlayers, assets)).toBe(
+      "Upload at least one photo for every player.",
+    );
+    expect(
+      getOrderWizardStepError(3, twoPlayers, [
+        ...assets,
+        asset("player_photo", "order-assets", "player-2.png", secondPlayerId),
+      ]),
+    ).toBeNull();
   });
 
   it("keeps final submission locked until every step and confirmation pass", () => {
@@ -140,6 +165,7 @@ function asset(
   assetType: UploadedAssetInput["assetType"],
   bucketId: UploadedAssetInput["bucketId"],
   filename: string,
+  playerId?: string,
 ): UploadedAssetInput {
   return {
     assetType,
@@ -148,5 +174,6 @@ function asset(
     originalFilename: filename,
     mimeType: "image/png",
     fileSize: 1024,
+    playerId,
   };
 }

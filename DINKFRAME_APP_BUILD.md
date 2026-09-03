@@ -165,8 +165,10 @@ Recommended steps:
 
 Fields:
 
-- Player full name — required
-- Instagram handle — optional
+- Add between 1 and 6 players
+- Full name for every player — required
+- Instagram handle for every player — optional and retained for social tagging,
+  never poster copy
 - WhatsApp number — required
 - Email — automatically populated from authenticated account
 
@@ -208,14 +210,17 @@ Do not force clients to fit event names into rigid dropdowns. Use editable text 
 
 ### Step 4 — Player images
 
-Require at least **2 player images**.
+Require at least **1 player image for every selected player**.
 
 Allow multiple image uploads.
 
 Recommended:
 
-- Minimum: 2
-- Maximum: 8
+- Minimum: 1 per player
+- Maximum: 8 total across the poster
+
+Every uploaded player image must remain assigned to its selected player so the
+creative automation can preserve identities in multi-player compositions.
 
 Show thumbnails immediately after upload.
 

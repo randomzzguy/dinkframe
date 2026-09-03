@@ -17,6 +17,7 @@ export interface UploadOrderAssetOptions {
   draftId: string;
   file: File;
   assetType: UploadableAssetType;
+  playerId?: string;
   onProgress?: (percentage: number) => void;
 }
 
@@ -24,6 +25,7 @@ export async function uploadOrderAsset({
   draftId,
   file,
   assetType,
+  playerId,
   onProgress,
 }: UploadOrderAssetOptions): Promise<UploadedAssetInput> {
   const validationError = validateUploadFile(assetType, file);
@@ -33,7 +35,15 @@ export async function uploadOrderAsset({
     assetType === "payment_proof"
       ? STORAGE_BUCKETS.paymentProofs
       : STORAGE_BUCKETS.orderAssets;
-  const storagePath = createStoragePath(draftId, assetType, file.name);
+  if (assetType === "player_photo" && !playerId) {
+    throw new Error("Choose the player this photo belongs to.");
+  }
+  const storagePath = createStoragePath(
+    draftId,
+    assetType,
+    file.name,
+    playerId,
+  );
 
   await uploadFileToPrivateBucket({
     bucketId,
@@ -49,6 +59,7 @@ export async function uploadOrderAsset({
     originalFilename: file.name,
     mimeType: file.type,
     fileSize: file.size,
+    playerId: assetType === "player_photo" ? playerId : undefined,
   };
 }
 
@@ -131,6 +142,7 @@ function createStoragePath(
   draftId: string,
   assetType: UploadableAssetType,
   filename: string,
+  playerId?: string,
 ) {
   const directory: Record<UploadableAssetType, string> = {
     player_photo: "players",
@@ -145,7 +157,9 @@ function createStoragePath(
     .replace(/^-|-$/g, "")
     .toLowerCase();
 
-  return `orders/${draftId}/${directory[assetType]}/${crypto.randomUUID()}-${safeFilename || "upload"}`;
+  const playerDirectory =
+    assetType === "player_photo" && playerId ? `/${playerId}` : "";
+  return `orders/${draftId}/${directory[assetType]}${playerDirectory}/${crypto.randomUUID()}-${safeFilename || "upload"}`;
 }
 
 async function uploadResumably(

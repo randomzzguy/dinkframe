@@ -59,7 +59,7 @@ export function renderAdminOrderNotification(
 
   const rows = [
     ["Order", input.orderNumber],
-    ["Player", input.playerName],
+    ["Player(s)", input.playerName],
     ["Client", `${input.clientName} · ${input.clientEmail}`],
     ["WhatsApp", input.clientWhatsapp],
     ["Tournament", input.tournamentName],
@@ -91,7 +91,7 @@ export function renderAdminOrderNotification(
       <tr><td style="padding:28px 32px 18px"><img src="${escapeHtml(input.logoUrl)}" width="176" alt="DINKFRAME" style="display:block;max-width:176px;height:auto"></td></tr>
       <tr><td style="padding:4px 32px 34px">
         <p style="margin:0 0 12px;color:#68705e;font-size:11px;font-weight:800;letter-spacing:2px">NEW ORDER</p>
-        <h1 style="margin:0 0 12px;font-size:32px;line-height:1.1;letter-spacing:-1px">${escapeHtml(input.playerName)} is ready for review.</h1>
+        <h1 style="margin:0 0 12px;font-size:32px;line-height:1.1;letter-spacing:-1px">A new poster brief is ready.</h1>
         <p style="margin:0 0 24px;color:#555b50;font-size:15px;line-height:1.65">${escapeHtml(productionCopy)}</p>
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 25px;background:#f7f8f2;border-left:4px solid #d8ff36;border-radius:12px">${rows}</table>
         ${paymentButtons}

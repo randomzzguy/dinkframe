@@ -64,32 +64,43 @@ async function main() {
     .single();
   if (orderError) throw orderError;
 
-  const [eventResult, sponsorResult, assetResult, settingsResult] =
-    await Promise.all([
-      supabase
-        .from("order_event_details")
-        .select("event_name, partner_name, placement")
-        .eq("order_id", order.id)
-        .order("sort_order"),
-      supabase
-        .from("sponsors")
-        .select("company_name")
-        .eq("order_id", order.id)
-        .order("created_at"),
-      supabase
-        .from("order_assets")
-        .select(
-          "id, asset_type, bucket_id, storage_path, original_filename, mime_type, file_size",
-        )
-        .eq("order_id", order.id),
-      supabase
-        .from("automation_settings")
-        .select("chatgpt_submission_mode")
-        .eq("id", true)
-        .single(),
-    ]);
+  const [
+    playerResult,
+    eventResult,
+    sponsorResult,
+    assetResult,
+    settingsResult,
+  ] = await Promise.all([
+    supabase
+      .from("order_players")
+      .select("id, full_name, sort_order")
+      .eq("order_id", order.id)
+      .order("sort_order"),
+    supabase
+      .from("order_event_details")
+      .select("event_name, partner_name, placement")
+      .eq("order_id", order.id)
+      .order("sort_order"),
+    supabase
+      .from("sponsors")
+      .select("company_name")
+      .eq("order_id", order.id)
+      .order("created_at"),
+    supabase
+      .from("order_assets")
+      .select(
+        "id, asset_type, bucket_id, storage_path, original_filename, mime_type, file_size, player_id",
+      )
+      .eq("order_id", order.id),
+    supabase
+      .from("automation_settings")
+      .select("chatgpt_submission_mode")
+      .eq("id", true)
+      .single(),
+  ]);
 
   const lookupError =
+    playerResult.error ??
     eventResult.error ??
     sponsorResult.error ??
     assetResult.error ??
@@ -97,6 +108,9 @@ async function main() {
   if (lookupError) throw lookupError;
   if (!settingsResult.data) throw new Error("Automation settings are missing.");
 
+  const playerNames = new Map(
+    (playerResult.data ?? []).map((player) => [player.id, player.full_name]),
+  );
   const allAssets: GenerationAssetManifestItem[] = (assetResult.data ?? [])
     .filter((asset) => asset.asset_type !== "final_poster")
     .map((asset) => ({
@@ -107,6 +121,10 @@ async function main() {
       originalFilename: asset.original_filename,
       mimeType: asset.mime_type,
       fileSize: asset.file_size,
+      playerId: asset.player_id,
+      playerName: asset.player_id
+        ? (playerNames.get(asset.player_id) ?? null)
+        : null,
     }));
   const assetError = validateManifestForStage("prompt_generation", allAssets);
   if (assetError) throw new Error(assetError);
@@ -115,6 +133,10 @@ async function main() {
     orderNumber: order.order_number,
     playerName: order.player_name,
     instagramHandle: order.instagram_handle,
+    players: (playerResult.data ?? []).map((player) => ({
+      id: player.id,
+      fullName: player.full_name,
+    })),
     whatsapp: order.whatsapp,
     tournamentName: order.tournament_name,
     tournamentStartDate: order.tournament_start_date,

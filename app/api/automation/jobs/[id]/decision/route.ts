@@ -136,14 +136,26 @@ async function queueImageJob(
   job: Database["public"]["Tables"]["generation_jobs"]["Row"],
   approvedPrompt: string,
 ) {
-  const { data: assets, error: assetError } = await supabase
-    .from("order_assets")
-    .select(
-      "id, asset_type, bucket_id, storage_path, original_filename, mime_type, file_size",
-    )
-    .eq("order_id", job.order_id);
-  if (assetError) return { error: assetError };
-  const manifest = (assets ?? []).map(toManifestItem);
+  const [assetResult, playerResult] = await Promise.all([
+    supabase
+      .from("order_assets")
+      .select(
+        "id, asset_type, bucket_id, storage_path, original_filename, mime_type, file_size, player_id",
+      )
+      .eq("order_id", job.order_id),
+    supabase
+      .from("order_players")
+      .select("id, full_name")
+      .eq("order_id", job.order_id),
+  ]);
+  const lookupError = assetResult.error ?? playerResult.error;
+  if (lookupError) return { error: lookupError };
+  const playerNames = new Map(
+    (playerResult.data ?? []).map((player) => [player.id, player.full_name]),
+  );
+  const manifest = (assetResult.data ?? []).map((asset) =>
+    toManifestItem(asset, playerNames),
+  );
   const manifestError = validateManifestForStage("image_generation", manifest);
   if (manifestError) return { error: new Error(manifestError) };
   return supabase.from("generation_jobs").insert({
@@ -230,15 +242,19 @@ function tokenMatches(rawToken: string, storedHash: string | null) {
   );
 }
 
-function toManifestItem(asset: {
-  id: string;
-  asset_type: GenerationAssetManifestItem["assetType"];
-  bucket_id: string;
-  storage_path: string;
-  original_filename: string;
-  mime_type: string;
-  file_size: number;
-}): GenerationAssetManifestItem {
+function toManifestItem(
+  asset: {
+    id: string;
+    asset_type: GenerationAssetManifestItem["assetType"];
+    bucket_id: string;
+    storage_path: string;
+    original_filename: string;
+    mime_type: string;
+    file_size: number;
+    player_id: string | null;
+  },
+  playerNames?: ReadonlyMap<string, string>,
+): GenerationAssetManifestItem {
   return {
     id: asset.id,
     assetType: asset.asset_type,
@@ -247,6 +263,10 @@ function toManifestItem(asset: {
     originalFilename: asset.original_filename,
     mimeType: asset.mime_type,
     fileSize: asset.file_size,
+    playerId: asset.player_id,
+    playerName: asset.player_id
+      ? (playerNames?.get(asset.player_id) ?? null)
+      : null,
   };
 }
 

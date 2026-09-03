@@ -52,6 +52,7 @@ export default async function AdminOrderPage({
 
   const [
     profileResult,
+    playerResult,
     eventResult,
     sponsorResult,
     assetResult,
@@ -64,6 +65,11 @@ export default async function AdminOrderPage({
       .select("email, full_name, whatsapp, instagram_handle")
       .eq("id", order.client_id)
       .maybeSingle(),
+    supabase
+      .from("order_players")
+      .select("id, full_name, instagram_handle, sort_order")
+      .eq("order_id", id)
+      .order("sort_order"),
     supabase
       .from("order_event_details")
       .select("*")
@@ -113,6 +119,7 @@ export default async function AdminOrderPage({
     .filter((asset) => asset.asset_type === "final_poster")
     .sort((left, right) => right.created_at.localeCompare(left.created_at));
   const profile = profileResult.data;
+  const players = playerResult.data ?? [];
   const freeRemaining = Math.max(
     0,
     entitlement
@@ -155,9 +162,18 @@ export default async function AdminOrderPage({
               <Detail label="Client email" value={profile?.email ?? "—"} />
               <Detail label="WhatsApp" value={order.whatsapp} />
               <Detail
-                label="Instagram"
+                label={players.length === 1 ? "Player" : "Players"}
+                value={players.map((player) => player.full_name).join(", ")}
+              />
+              <Detail
+                label="Instagram tags"
                 value={
-                  order.instagram_handle ? `@${order.instagram_handle}` : "—"
+                  players.some((player) => player.instagram_handle)
+                    ? players
+                        .filter((player) => player.instagram_handle)
+                        .map((player) => `@${player.instagram_handle}`)
+                        .join(", ")
+                    : "—"
                 }
               />
               <Detail label="Tournament" value={order.tournament_name} />
@@ -277,7 +293,9 @@ export default async function AdminOrderPage({
                       <td className="py-3 capitalize">
                         {asset.asset_type === "final_poster"
                           ? posterDeliveryLabel(asset.is_temporary)
-                          : asset.asset_type.replaceAll("_", " ")}
+                          : asset.asset_type === "player_photo"
+                            ? `Player photo · ${players.find((player) => player.id === asset.player_id)?.full_name ?? "Player"}`
+                            : asset.asset_type.replaceAll("_", " ")}
                       </td>
                       <td className="py-3">{formatBytes(asset.file_size)}</td>
                       <td className="py-3 text-right">
