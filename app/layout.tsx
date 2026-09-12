@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Barlow_Condensed, Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
 
@@ -92,6 +93,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         {children}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
