@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -11,6 +11,12 @@ import type {
   ClaimedGenerationAsset,
   GenerationJobStage,
 } from "../lib/automation/generation";
+import {
+  CLAIM_MAX_ATTEMPTS,
+  CLAIM_RETRY_DELAY_MS,
+  isRetryableClaimResponse,
+  shouldNotifyClaimFailure,
+} from "../lib/automation/claim-resilience";
 import { calculateFourByFivePlacement } from "../lib/automation/poster-output";
 
 const execFileAsync = promisify(execFile);
@@ -25,6 +31,7 @@ const appUrl = (
 ).replace(/\/$/, "");
 const runnerId = `hermes-${os.hostname()}`.slice(0, 120);
 const durableRoot = path.join(process.cwd(), ".dinkframe", "automation");
+const claimHealthPath = path.join(durableRoot, "claim-health.json");
 const telegramActionRoot = path.join(
   process.cwd(),
   ".dinkframe",
@@ -70,6 +77,16 @@ type TelegramActionRecord = {
   messageId?: string;
 };
 
+class ClaimJobError extends Error {
+  constructor(
+    message: string,
+    readonly retryable: boolean,
+  ) {
+    super(message);
+    this.name = "ClaimJobError";
+  }
+}
+
 void main().catch((error: unknown) => {
   console.error(
     error instanceof Error ? error.message : "Unknown Hermes runner failure",
@@ -82,6 +99,7 @@ async function main() {
   let workDirectory: string | null = null;
   try {
     job = await claimJob();
+    await clearClaimFailureState();
     if (!job) {
       console.log("No DINKFRAME generation jobs are queued.");
       return;
@@ -102,6 +120,13 @@ async function main() {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown Hermes runner failure";
+    if (!job && error instanceof ClaimJobError && error.retryable) {
+      const consecutiveFailures = await recordClaimFailure(message);
+      if (!shouldNotifyClaimFailure(consecutiveFailures)) return;
+      throw new Error(
+        `DINKFRAME claim service is still unavailable after ${consecutiveFailures} consecutive checks: ${message}`,
+      );
+    }
     if (job && !(error instanceof ReviewDeliveryError)) {
       await updateStatus(job.id, { status: "failed", error: message }).catch(
         () => undefined,
@@ -401,15 +426,64 @@ async function sendTelegram(message: string) {
 }
 
 async function claimJob(): Promise<ClaimedJob | null> {
-  const response = await fetch(`${appUrl}/api/automation/jobs/claim`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ runnerId }),
-  });
-  if (response.status === 204) return null;
-  if (!response.ok)
-    throw new Error(await responseError(response, "claim a job"));
-  return ((await response.json()) as { job: ClaimedJob }).job;
+  for (let attempt = 1; attempt <= CLAIM_MAX_ATTEMPTS; attempt += 1) {
+    const response = await fetch(`${appUrl}/api/automation/jobs/claim`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ runnerId }),
+    });
+    if (response.status === 204) return null;
+    if (response.ok)
+      return ((await response.json()) as { job: ClaimedJob }).job;
+
+    const body = await readResponseError(response, "claim a job");
+    const retryable = isRetryableClaimResponse(
+      response.status,
+      body.message,
+      body.retryable,
+    );
+    if (!retryable || attempt === CLAIM_MAX_ATTEMPTS) {
+      throw new ClaimJobError(body.message, retryable);
+    }
+    await delay(CLAIM_RETRY_DELAY_MS);
+  }
+  return null;
+}
+
+async function recordClaimFailure(message: string) {
+  await mkdir(durableRoot, { recursive: true });
+  let consecutiveFailures = 0;
+  try {
+    const current = JSON.parse(await readFile(claimHealthPath, "utf8")) as {
+      consecutiveFailures?: number;
+    };
+    consecutiveFailures = Math.max(0, current.consecutiveFailures ?? 0);
+  } catch {
+    // A missing or malformed local health file starts a fresh failure window.
+  }
+  consecutiveFailures += 1;
+  await writeFile(
+    claimHealthPath,
+    JSON.stringify(
+      {
+        consecutiveFailures,
+        lastError: message,
+        updatedAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  return consecutiveFailures;
+}
+
+async function clearClaimFailureState() {
+  await rm(claimHealthPath, { force: true });
+}
+
+function delay(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 async function updateStatus(
@@ -481,11 +555,21 @@ function authHeaders() {
 }
 
 async function responseError(response: Response, action: string) {
+  return (await readResponseError(response, action)).message;
+}
+
+async function readResponseError(response: Response, action: string) {
   const text = await response.text();
   try {
-    const parsed = JSON.parse(text) as { error?: string };
-    return parsed.error ?? `Unable to ${action}.`;
+    const parsed = JSON.parse(text) as {
+      error?: string;
+      retryable?: boolean;
+    };
+    return {
+      message: parsed.error ?? `Unable to ${action}.`,
+      retryable: parsed.retryable === true,
+    };
   } catch {
-    return `Unable to ${action}.`;
+    return { message: `Unable to ${action}.`, retryable: false };
   }
 }

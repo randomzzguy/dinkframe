@@ -35,7 +35,21 @@ export async function POST(request: Request) {
   });
   if (error) {
     console.error("generation_job_claim_failed", error);
-    return Response.json({ error: "Unable to claim a job" }, { status: 500 });
+    const retryable = /gateway timeout|timed? out|fetch failed/i.test(
+      error.message,
+    );
+    return Response.json(
+      {
+        error: retryable
+          ? "Claim service temporarily unavailable"
+          : "Unable to claim a job",
+        retryable,
+      },
+      {
+        status: retryable ? 503 : 500,
+        headers: retryable ? { "Retry-After": "2" } : undefined,
+      },
+    );
   }
   if (!job?.id) return new Response(null, { status: 204 });
 

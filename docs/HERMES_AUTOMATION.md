@@ -118,6 +118,12 @@ when the queue is empty, so the existing no-agent, once-per-minute Hermes cron
 can continue using it. Detailed prompt/image review messages are sent directly
 to Telegram by the runner.
 
+Temporary claim-service failures are retried once. If both attempts fail, the
+runner records the failed poll locally and stays quiet until three consecutive
+polls have failed. A persistent outage is then reported to Telegram, with a
+reminder every fifteen failed polls; any successful claim check resets the
+counter. Generation, delivery, and review failures still surface immediately.
+
 The repo copy of the Telegram extension is under
 `hermes/plugins/dinkframe-telegram-platform`. Its installed copy lives under
 the active Hermes profile's `plugins` directory and is enabled as

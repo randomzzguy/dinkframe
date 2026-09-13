@@ -103,6 +103,11 @@ Where it lives:
 
 Rule to remember: there is one owner, not a team-permissions product. The configured `ADMIN_EMAIL` and the `profiles.role = 'admin'` RLS identity must both match. Hermes production always requires an owner-only, one-time Telegram decision. Native buttons carry opaque local action IDs; a normal conversational “yes” is not approval. The older auto-send setting applies only to the legacy Playwright fallback.
 
+Runner health rule: a temporary claim-service failure gets one immediate retry.
+Telegram is notified only after three consecutive failed polls, with sparse
+reminders during a sustained outage; any successful poll resets the local
+counter. Failures after a job is claimed still surface immediately.
+
 Poster delivery rule: the admin uploads directly to a private order-scoped Storage path, but the browser cannot publish it by itself. The server and database verify the order, payment, path, object, type, and size before a review draft or final poster becomes visible to the client. Review drafts use `final_poster` with `is_temporary = true`; approved finals use `is_temporary = false`.
 
 Action rule: confirming payment starts production; approving the generated image enters finishing touches; publishing a review opens amendments; publishing a final completes the order. Never require the owner to repeat these outcomes in a separate status form.
