@@ -22,6 +22,7 @@ const completeDraft: WizardDraftValidationInput = {
   sponsors: [],
   colorPreference: "surprise",
   customColor: "#d8ff36",
+  secondaryColors: [],
   themePreference: "surprise",
   customNotes: "",
   referenceUrl: "",
@@ -158,6 +159,31 @@ describe("order wizard step validation", () => {
         assets,
       ),
     ).toBeNull();
+  });
+
+  it("accepts up to two distinct secondary colors", () => {
+    expect(
+      getOrderWizardStepError(
+        5,
+        {
+          ...completeDraft,
+          colorPreference: "blue",
+          secondaryColors: ["#ffffff", "#d8ff36"],
+        },
+        assets,
+      ),
+    ).toBeNull();
+    expect(
+      getOrderWizardStepError(
+        5,
+        {
+          ...completeDraft,
+          colorPreference: "blue",
+          secondaryColors: ["#ffffff", "#ffffff"],
+        },
+        assets,
+      ),
+    ).toBe("Choose different secondary colors.");
   });
 });
 

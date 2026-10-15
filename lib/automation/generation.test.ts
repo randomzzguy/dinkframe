@@ -25,6 +25,7 @@ const snapshot: GenerationBriefSnapshot = {
   posterCount: 1,
   colorPreference: "custom",
   customColor: "electric blue",
+  secondaryColors: [],
   themePreference: "bold_energy",
   customNotes: "Feature the backhand pose.",
   referenceUrl: null,
@@ -125,6 +126,23 @@ describe("generation automation", () => {
     expect(message).toContain("exact hex values");
     expect(message).toContain("genuinely out-of-the-box named");
     expect(message).toContain("avoid generic stadium");
+  });
+
+  it("assigns dominant, secondary, and accent roles to a three-color palette", () => {
+    const message = buildPromptStudioMessage({
+      ...snapshot,
+      customColor: "#112233",
+      secondaryColors: ["#445566", "#778899"],
+      themePreference: "claymorphism",
+    });
+
+    expect(message).toContain(
+      "Dominant/main color direction: Custom (#112233)",
+    );
+    expect(message).toContain("Supporting secondary color: #445566");
+    expect(message).toContain("Accent color: #778899");
+    expect(message).toContain("Claymorphism");
+    expect(message).toContain("clay-like surfaces");
   });
 
   it("only sends the tournament logo to Prompt Studio", () => {

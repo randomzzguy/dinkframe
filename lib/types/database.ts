@@ -118,6 +118,7 @@ export type Database = {
           paid_amendments_used: number;
           color_preference: string;
           custom_color: string | null;
+          secondary_colors: string[];
           theme_preference: string;
           custom_notes: string | null;
           reference_url: string | null;
@@ -167,6 +168,7 @@ export type Database = {
           paid_amendments_used?: number;
           color_preference: string;
           custom_color?: string | null;
+          secondary_colors?: string[];
           theme_preference: string;
           custom_notes?: string | null;
           reference_url?: string | null;

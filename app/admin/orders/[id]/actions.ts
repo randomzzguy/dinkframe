@@ -623,6 +623,7 @@ async function queueGenerationJob({
     posterCount: order.poster_count_snapshot,
     colorPreference: order.color_preference,
     customColor: order.custom_color,
+    secondaryColors: order.secondary_colors,
     themePreference: order.theme_preference,
     customNotes: order.custom_notes,
     referenceUrl: order.reference_url,

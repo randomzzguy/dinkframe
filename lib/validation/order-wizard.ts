@@ -23,6 +23,7 @@ export interface WizardDraftValidationInput {
   sponsors: readonly { companyName: string }[];
   colorPreference: string;
   customColor: string;
+  secondaryColors: readonly string[];
   themePreference: string;
   customNotes: string;
   referenceUrl: string;
@@ -163,6 +164,36 @@ export function getOrderWizardStepError(
     !/^#[0-9a-fA-F]{6}$/.test(draft.customColor)
   ) {
     return "Choose a valid custom color.";
+  }
+  if (
+    step === 5 &&
+    (draft.secondaryColors.length > 2 ||
+      draft.secondaryColors.some((color) => !/^#[0-9a-fA-F]{6}$/.test(color)))
+  ) {
+    return "Choose up to two valid secondary colors.";
+  }
+  if (
+    step === 5 &&
+    new Set(draft.secondaryColors.map((color) => color.toLowerCase())).size !==
+      draft.secondaryColors.length
+  ) {
+    return "Choose different secondary colors.";
+  }
+  if (
+    step === 5 &&
+    draft.colorPreference === "surprise" &&
+    draft.secondaryColors.length > 0
+  ) {
+    return "Remove custom palette colors when using Surprise Me.";
+  }
+  if (
+    step === 5 &&
+    draft.colorPreference === "custom" &&
+    draft.secondaryColors.some(
+      (color) => color.toLowerCase() === draft.customColor.toLowerCase(),
+    )
+  ) {
+    return "Choose colors that are different from the main color.";
   }
   if (step === 5 && draft.customNotes.length > 2000) {
     return "Keep the creative notes under 2,000 characters.";

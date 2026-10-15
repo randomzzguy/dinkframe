@@ -236,6 +236,7 @@ async function createSmokeOrder() {
       posterCount: selectedPackage.poster_count,
       colorPreference: "custom",
       customColor: "#CCFF00",
+      secondaryColors: [],
       themePreference: "bold_energy",
       customNotes:
         "Automation smoke test only. Make the composition unmistakably synthetic and do not include sponsor marks.",

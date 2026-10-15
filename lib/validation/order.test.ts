@@ -84,6 +84,35 @@ describe("order draft validation", () => {
       }).success,
     ).toBe(true);
   });
+
+  it("accepts one to three palette colors and rejects duplicate accents", () => {
+    expect(
+      orderDraftSchema.safeParse({
+        ...order,
+        secondaryColors: ["#112233", "#AABBCC"],
+      }).success,
+    ).toBe(true);
+    expect(
+      orderDraftSchema.safeParse({
+        ...order,
+        secondaryColors: ["#112233", "#112233"],
+      }).success,
+    ).toBe(false);
+    expect(
+      orderDraftSchema.safeParse({
+        ...order,
+        colorPreference: "custom",
+        customColor: "#112233",
+        secondaryColors: ["#112233"],
+      }).success,
+    ).toBe(false);
+    expect(
+      orderDraftSchema.safeParse({
+        ...order,
+        secondaryColors: ["#112233", "#AABBCC", "#DDEEFF"],
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe("order submission payment validation", () => {

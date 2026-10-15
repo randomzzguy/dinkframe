@@ -37,6 +37,7 @@ import {
   type AnnouncementTone,
   type FrameType,
 } from "@/lib/orders/frame-types";
+import { formatColorPalette } from "@/lib/orders/creative-preferences";
 import { removeOrderAsset, uploadOrderAsset } from "@/lib/storage/upload-draft";
 import type { AssetType } from "@/lib/types/domain";
 import type {
@@ -88,6 +89,7 @@ type Draft = {
   sponsors: DraftSponsor[];
   colorPreference: string;
   customColor: string;
+  secondaryColors: string[];
   themePreference: string;
   customNotes: string;
   referenceUrl: string;
@@ -166,6 +168,7 @@ function createBlankDraft(
     sponsors: [],
     colorPreference: "surprise",
     customColor: "#d8ff36",
+    secondaryColors: [],
     themePreference: "surprise",
     customNotes: "",
     referenceUrl: "",
@@ -218,6 +221,10 @@ export function OrderWizard({
     () => frameCredits.find((item) => item.id === draft.frameEntitlementId),
     [draft.frameEntitlementId, frameCredits],
   );
+  const selectedTheme = useMemo(
+    () => themes.find((item) => item.slug === draft.themePreference),
+    [draft.themePreference, themes],
+  );
   const playerPhotos = assets.filter(
     (asset) => asset.assetType === "player_photo",
   );
@@ -260,6 +267,13 @@ export function OrderWizard({
             frameCredits,
           );
           const savedEntitlementId = parsed.draft?.frameEntitlementId ?? "";
+          const savedSecondaryColors = Array.isArray(
+            parsed.draft?.secondaryColors,
+          )
+            ? parsed.draft.secondaryColors
+                .filter((color): color is string => typeof color === "string")
+                .slice(0, 2)
+            : blankDraft.secondaryColors;
           const savedPlayers = parsed.draft?.players?.length
             ? parsed.draft.players
             : [
@@ -279,6 +293,7 @@ export function OrderWizard({
             ...blankDraft,
             ...parsed.draft,
             players: savedPlayers,
+            secondaryColors: savedSecondaryColors,
             frameEntitlementId: frameCredits.some(
               (credit) => credit.id === savedEntitlementId,
             )
@@ -578,6 +593,7 @@ export function OrderWizard({
           colorPreference: draft.colorPreference,
           customColor:
             draft.colorPreference === "custom" ? draft.customColor : undefined,
+          secondaryColors: draft.secondaryColors,
           themePreference: draft.themePreference,
           customNotes: draft.customNotes || undefined,
           referenceUrl: draft.referenceUrl || undefined,
@@ -1100,7 +1116,10 @@ export function OrderWizard({
               <SelectField
                 label="Color direction"
                 value={draft.colorPreference}
-                onChange={(value) => update("colorPreference", value)}
+                onChange={(value) => {
+                  update("colorPreference", value);
+                  if (value === "surprise") update("secondaryColors", []);
+                }}
                 options={[
                   { value: "surprise", label: "Surprise Me" },
                   { value: "black-white", label: "Black & White" },
@@ -1115,18 +1134,25 @@ export function OrderWizard({
                   ].map((value) => ({ value, label: titleCase(value) })),
                 ]}
               />
-              <SelectField
-                label="Theme"
-                value={draft.themePreference}
-                onChange={(value) => update("themePreference", value)}
-                options={themes.map((theme) => ({
-                  value: theme.slug,
-                  label: theme.name,
-                }))}
-              />
+              <div>
+                <SelectField
+                  label="Theme"
+                  value={draft.themePreference}
+                  onChange={(value) => update("themePreference", value)}
+                  options={themes.map((theme) => ({
+                    value: theme.slug,
+                    label: theme.name,
+                  }))}
+                />
+                {selectedTheme?.description && (
+                  <p className="mt-2 text-sm text-neutral-500">
+                    {selectedTheme.description}
+                  </p>
+                )}
+              </div>
               {draft.colorPreference === "custom" && (
                 <div className="space-y-2">
-                  <Label htmlFor="custom-color">Custom color</Label>
+                  <Label htmlFor="custom-color">Main custom color</Label>
                   <div className="flex gap-2">
                     <Input
                       id="custom-color"
@@ -1147,6 +1173,91 @@ export function OrderWizard({
                   </div>
                 </div>
               )}
+              <div className="space-y-3 sm:col-span-2">
+                <div>
+                  <p className="text-sm font-medium">Poster palette</p>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    {draft.colorPreference === "surprise"
+                      ? "The designer will choose the complete palette."
+                      : "Your main color direction is set above. Optionally add a secondary and accent color for a two- or three-color palette."}
+                  </p>
+                </div>
+                {draft.secondaryColors.map((color, index) => (
+                  <div
+                    key={index}
+                    className="grid gap-2 rounded-xl border border-black/10 p-3 sm:grid-cols-[1fr_auto] sm:items-end"
+                  >
+                    <div className="space-y-2">
+                      <Label htmlFor={`secondary-color-${index}`}>
+                        {index === 0 ? "Secondary color" : "Accent color"}
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id={`secondary-color-${index}`}
+                          type="color"
+                          value={color}
+                          onChange={(event) =>
+                            update(
+                              "secondaryColors",
+                              draft.secondaryColors.map((item, itemIndex) =>
+                                itemIndex === index ? event.target.value : item,
+                              ),
+                            )
+                          }
+                          className="h-10 w-16 p-1"
+                        />
+                        <Input
+                          aria-label={`${index === 0 ? "Secondary" : "Accent"} color hex value`}
+                          value={color}
+                          onChange={(event) =>
+                            update(
+                              "secondaryColors",
+                              draft.secondaryColors.map((item, itemIndex) =>
+                                itemIndex === index ? event.target.value : item,
+                              ),
+                            )
+                          }
+                          pattern="#[0-9a-fA-F]{6}"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      aria-label={`Remove ${index === 0 ? "secondary" : "accent"} color`}
+                      onClick={() =>
+                        update(
+                          "secondaryColors",
+                          draft.secondaryColors.filter(
+                            (_, itemIndex) => itemIndex !== index,
+                          ),
+                        )
+                      }
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                ))}
+                {draft.colorPreference !== "surprise" &&
+                  draft.secondaryColors.length < 2 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() =>
+                        update("secondaryColors", [
+                          ...draft.secondaryColors,
+                          nextPaletteColor(draft.secondaryColors),
+                        ])
+                      }
+                    >
+                      <Plus />
+                      {draft.secondaryColors.length === 0
+                        ? "Add secondary color"
+                        : "Add accent color"}
+                    </Button>
+                  )}
+              </div>
               <div className="sm:col-span-2">
                 <Label htmlFor="notes">
                   Anything else you’d like us to know?
@@ -1456,7 +1567,7 @@ export function OrderWizard({
                 />
                 <ReviewItem
                   label="Creative direction"
-                  value={`${titleCase(draft.colorPreference)} · ${themes.find((theme) => theme.slug === draft.themePreference)?.name ?? titleCase(draft.themePreference)}`}
+                  value={`${formatColorPalette(draft.colorPreference, draft.colorPreference === "custom" ? draft.customColor : null, draft.secondaryColors)} · ${selectedTheme?.name ?? titleCase(draft.themePreference)}`}
                 />
                 <ReviewItem
                   label="Files"
@@ -1671,6 +1782,17 @@ function titleCase(value: string) {
     .split("-")
     .map((part) => part[0]?.toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function nextPaletteColor(existing: readonly string[]) {
+  return (
+    ["#2563eb", "#d8ff36", "#f97316"].find(
+      (candidate) =>
+        !existing.some(
+          (selected) => selected.toLowerCase() === candidate.toLowerCase(),
+        ),
+    ) ?? "#ffffff"
+  );
 }
 
 function Field({

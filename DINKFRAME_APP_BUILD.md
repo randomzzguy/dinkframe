@@ -251,7 +251,14 @@ This supports clients who only know the sponsor name and do not have the logo fi
 
 ### Step 6 — Creative direction
 
-Color preference:
+Color palette:
+
+- Choose one main color direction.
+- Optionally add one secondary color and one accent color, for a total of one,
+  two, or three colors.
+- Preserve **Surprise Me** as a designer-selected complete palette.
+
+Available main color directions:
 
 - Black & White
 - Blue
@@ -265,23 +272,46 @@ Color preference:
 
 Custom color option should allow a hex value or simple color picker.
 
+Secondary and accent colors should use exact hex values or simple color
+pickers. The production prompt must identify the selections as dominant/main,
+supporting/secondary, and accent colors in that order.
+
 Theme selection:
 
 Create a curated list of design directions, for example:
 
-- Minimalist
+- Minimalism
 - Clean & Premium
 - Powerful / Athletic
 - Futuristic
 - Cyberpunk
 - Luxury Sports
-- Editorial
+- Editorial Design
 - Neon
 - Urban
 - Cinematic
 - Japanese-inspired
 - Tropical
 - Experimental
+- Claymorphism
+- Cybercore
+- Neo-Brutalism
+- Scrapbook
+- Surrealism
+- Y2K Aesthetic
+- Pixel Art
+- Synthwave
+- Glassmorphism
+- Neumorphism
+- Bento Grid
+- Swiss Design
+- Maximalism
+- Luxury Typography
+- Conceptual Sketch
+- Ethereal
+- Bohemian
+- Victorian
+- Wabi-Sabi
 
 Include thumbnails or simple visual previews for each theme.
 

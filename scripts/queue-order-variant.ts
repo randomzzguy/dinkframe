@@ -149,6 +149,8 @@ async function main() {
     posterCount: order.poster_count_snapshot,
     colorPreference,
     customColor: colorPreference === "custom" ? (customColor ?? null) : null,
+    secondaryColors:
+      colorPreference === "surprise" ? [] : order.secondary_colors,
     themePreference,
     customNotes: order.custom_notes,
     referenceUrl: order.reference_url,

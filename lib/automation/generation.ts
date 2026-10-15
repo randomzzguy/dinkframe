@@ -5,6 +5,7 @@ import {
   formatFrameType,
   formatPlacement,
 } from "@/lib/orders/frame-types";
+import { getThemePromptDirection } from "@/lib/orders/creative-preferences";
 
 export const GENERATION_JOB_STAGES = [
   "prompt_generation",
@@ -44,6 +45,7 @@ export type GenerationBriefSnapshot = {
   posterCount: number;
   colorPreference: string;
   customColor: string | null;
+  secondaryColors: string[];
   themePreference: string;
   customNotes: string | null;
   referenceUrl: string | null;
@@ -77,7 +79,7 @@ export type ClaimedGenerationAsset = GenerationAssetManifestItem & {
   downloadUrl: string;
 };
 
-export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v14";
+export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v15";
 export const IMAGE_GENERATION_TEMPLATE_VERSION = "image-generation-v3";
 
 export const GENERATION_STAGE_LABELS: Record<GenerationJobStage, string> = {
@@ -271,14 +273,25 @@ function formatColorDirection(snapshot: GenerationBriefSnapshot) {
   if (snapshot.colorPreference === "surprise") {
     return "SURPRISE ME — choose an unexpected, harmonious campaign palette derived from the protected logo, athlete, venue, or event story. State one dominant, one supporting, and one accent color with exact hex values; avoid defaulting to black-and-neon.";
   }
-  return formatPreference(snapshot.colorPreference, snapshot.customColor);
+  const primary = formatPreference(
+    snapshot.colorPreference,
+    snapshot.customColor,
+  );
+  const secondaryColors = snapshot.secondaryColors ?? [];
+  if (secondaryColors.length === 0) {
+    return `Dominant/main color direction: ${primary}. Build depth with tonal variation and restrained neutrals; do not introduce a competing accent color.`;
+  }
+  if (secondaryColors.length === 1) {
+    return `Dominant/main color direction: ${primary}. Supporting secondary color: ${secondaryColors[0].toUpperCase()}. Keep the main color visually dominant and use the secondary color deliberately for hierarchy and contrast.`;
+  }
+  return `Dominant/main color direction: ${primary}. Supporting secondary color: ${secondaryColors[0].toUpperCase()}. Accent color: ${secondaryColors[1].toUpperCase()}. Use the palette in that priority order and do not add unrelated competing colors.`;
 }
 
 function formatThemeDirection(preference: string) {
   if (preference === "surprise") {
     return "SURPRISE ME — invent a genuinely out-of-the-box named sports-campaign concept derived from the supplied assets. Make it recognizable through composition, typography, and material language; avoid generic stadium, neon, and template aesthetics.";
   }
-  return humanize(preference);
+  return getThemePromptDirection(preference);
 }
 
 function humanize(value: string) {

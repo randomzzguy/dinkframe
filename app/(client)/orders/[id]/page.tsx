@@ -12,6 +12,10 @@ import {
   formatFrameType,
   formatPlacement,
 } from "@/lib/orders/frame-types";
+import {
+  formatColorPalette,
+  formatThemeName,
+} from "@/lib/orders/creative-preferences";
 import type { OrderStatus } from "@/lib/types/domain";
 
 const timeline: { status: OrderStatus; label: string }[] = [
@@ -331,8 +335,18 @@ export default async function OrderDetailsPage({
               label="Payment"
               value={<PaymentStatusBadge status={order.payment_status} />}
             />
-            <Detail label="Color" value={order.color_preference} />
-            <Detail label="Theme" value={order.theme_preference} />
+            <Detail
+              label="Colors"
+              value={formatColorPalette(
+                order.color_preference,
+                order.custom_color,
+                order.secondary_colors,
+              )}
+            />
+            <Detail
+              label="Theme"
+              value={formatThemeName(order.theme_preference)}
+            />
           </dl>
           <div className="mt-6 border-t border-black/10 pt-5">
             <h3 className="text-sm font-bold">Events</h3>

@@ -57,6 +57,10 @@ export const orderDraftSchema = z
       .string()
       .regex(/^#[0-9a-fA-F]{6}$/)
       .optional(),
+    secondaryColors: z
+      .array(z.string().regex(/^#[0-9a-fA-F]{6}$/))
+      .max(2)
+      .default([]),
     themePreference: z.string().trim().min(1).max(80),
     customNotes: optionalText(2000),
     referenceUrl: z
@@ -80,6 +84,36 @@ export const orderDraftSchema = z
     {
       message: "Choose a custom color.",
       path: ["customColor"],
+    },
+  )
+  .refine(
+    (value) =>
+      new Set(value.secondaryColors.map((color) => color.toLowerCase()))
+        .size === value.secondaryColors.length,
+    {
+      message: "Choose different secondary colors.",
+      path: ["secondaryColors"],
+    },
+  )
+  .refine(
+    (value) =>
+      value.colorPreference !== "surprise" ||
+      value.secondaryColors.length === 0,
+    {
+      message: "Surprise Me uses a designer-selected palette.",
+      path: ["secondaryColors"],
+    },
+  )
+  .refine(
+    (value) =>
+      value.colorPreference !== "custom" ||
+      !value.customColor ||
+      !value.secondaryColors.some(
+        (color) => color.toLowerCase() === value.customColor?.toLowerCase(),
+      ),
+    {
+      message: "Choose colors that are different from the main color.",
+      path: ["secondaryColors"],
     },
   )
   .superRefine((value, context) => {

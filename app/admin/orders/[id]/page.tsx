@@ -12,6 +12,10 @@ import {
 import { requireAdmin } from "@/lib/auth/guards";
 import { posterDeliveryLabel } from "@/lib/orders/delivery";
 import {
+  formatColorPalette,
+  formatThemeName,
+} from "@/lib/orders/creative-preferences";
+import {
   formatAnnouncementTone,
   formatFrameType,
   formatPlacement,
@@ -192,7 +196,7 @@ export default async function AdminOrderPage({
               />
               <Detail
                 label="Creative direction"
-                value={`${titleCase(order.color_preference)} · ${titleCase(order.theme_preference)}`}
+                value={`${formatColorPalette(order.color_preference, order.custom_color, order.secondary_colors)} · ${formatThemeName(order.theme_preference)}`}
               />
               <Detail
                 label="Free amendments"

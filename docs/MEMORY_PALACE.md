@@ -76,6 +76,12 @@ one controlled tone. These additions do not remove the existing player,
 tournament, event, creative, upload, package, or payment requirements. The
 shared labels and values live in `lib/orders/frame-types.ts`.
 
+Creative direction stores one main color direction plus up to two exact accent
+colors. Prompt generation assigns them dominant, supporting, and accent roles.
+Theme choices come from the active Supabase catalog, while repository-owned
+prompt recipes make each curated theme materially affect composition,
+typography, and graphic language.
+
 Frame type is routing metadata only. It changes narrative and hierarchy, but
 `Upcoming event`, `Congratulations`, `Announcement`, and equivalent category
 headings must never be rendered or included in a poster text checklist unless
