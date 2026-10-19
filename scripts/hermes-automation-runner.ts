@@ -214,7 +214,9 @@ async function runImageJob(
   const generatedPath = extractGeneratedImagePath(output);
   const generatedStat = await stat(generatedPath).catch(() => null);
   if (!generatedStat?.isFile()) {
-    throw new Error("Hermes did not return a valid generated image file.");
+    throw new Error(
+      `Hermes did not return a valid generated image file. Output: ${output.slice(-2000)}`,
+    );
   }
 
   const orderDirectory = path.join(durableRoot, job.orderNumber ?? job.orderId);
