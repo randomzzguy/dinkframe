@@ -1,6 +1,14 @@
 import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import {
+  access,
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -37,13 +45,9 @@ const telegramActionRoot = path.join(
   ".dinkframe",
   "telegram-actions",
 );
-const hermesPython = path.join(
+const hermesHome = path.join(
   process.env.LOCALAPPDATA ?? path.join(os.homedir(), "AppData", "Local"),
   "hermes",
-  "hermes-agent",
-  "venv",
-  "Scripts",
-  "python.exe",
 );
 const telegramButtonScript = path.join(
   process.cwd(),
@@ -55,6 +59,7 @@ const telegramMediaScript = path.join(
   "hermes",
   "dinkframe-telegram-media.py",
 );
+let hermesPythonPromise: Promise<string> | undefined;
 
 type ClaimedJob = {
   id: string;
@@ -314,6 +319,7 @@ async function sendTelegramPhoto(
   actionId: string,
 ) {
   const payload = JSON.stringify({ imagePath, caption, actionId });
+  const hermesPython = await resolveHermesPython();
   const { stdout } = await execFileAsync(
     hermesPython,
     [telegramMediaScript, payload],
@@ -374,6 +380,7 @@ async function attachTelegramDecisionButtons(action: TelegramActionRecord) {
     stage: action.stage,
     messageId: action.messageId,
   });
+  const hermesPython = await resolveHermesPython();
   await execFileAsync(hermesPython, [telegramButtonScript, payload], {
     cwd: process.cwd(),
     timeout: 45_000,
@@ -382,26 +389,104 @@ async function attachTelegramDecisionButtons(action: TelegramActionRecord) {
   });
 }
 
-async function runHermes(instruction: string) {
-  const { stdout, stderr } = await execFileAsync(
-    "hermes",
-    [
-      "--provider",
-      "openai-codex",
-      "-m",
-      "gpt-5.5",
-      "--skills",
-      "dinkframe-creative-director",
-      "-z",
-      instruction,
-    ],
-    {
-      cwd: process.cwd(),
-      timeout: 10 * 60 * 1000,
-      maxBuffer: 10 * 1024 * 1024,
-      windowsHide: true,
-    },
+async function resolveHermesPython(): Promise<string> {
+  if (!hermesPythonPromise) {
+    hermesPythonPromise = findHermesPython();
+  }
+  return hermesPythonPromise;
+}
+
+async function findHermesPython(): Promise<string> {
+  const candidates = new Set<string>();
+  const configured = process.env.DINKFRAME_HERMES_PYTHON?.trim();
+  if (configured) candidates.add(configured);
+  candidates.add(
+    path.join(hermesHome, "hermes-agent", "venv", "Scripts", "python.exe"),
   );
+
+  const installsRoot = path.join(hermesHome, "installs");
+  const installs = await readdir(installsRoot, { withFileTypes: true }).catch(
+    () => [],
+  );
+  for (const install of installs) {
+    if (!install.isDirectory()) continue;
+    const environmentsRoot = path.join(
+      installsRoot,
+      install.name,
+      "environments",
+    );
+    const environments = await readdir(environmentsRoot, {
+      withFileTypes: true,
+    }).catch(() => []);
+    for (const environment of environments) {
+      if (!environment.isDirectory()) continue;
+      candidates.add(
+        path.join(
+          environmentsRoot,
+          environment.name,
+          "venv",
+          "Scripts",
+          "python.exe",
+        ),
+      );
+    }
+  }
+
+  for (const candidate of candidates) {
+    try {
+      await access(candidate);
+      await execFileAsync(candidate, ["-c", "import telegram"], {
+        timeout: 10_000,
+        windowsHide: true,
+      });
+      return candidate;
+    } catch {
+      // Keep looking; Hermes may have more than one dependency environment.
+    }
+  }
+
+  throw new Error(
+    "No Hermes Python environment with python-telegram-bot was found. Reinstall the Hermes Telegram dependency or set DINKFRAME_HERMES_PYTHON.",
+  );
+}
+
+async function runHermes(instruction: string) {
+  let result: { stdout: string; stderr: string };
+  try {
+    result = await execFileAsync(
+      "hermes",
+      [
+        "--provider",
+        "openai-codex",
+        "-m",
+        "gpt-5.6-terra",
+        "--skills",
+        "dinkframe-creative-director",
+        "-z",
+        instruction,
+      ],
+      {
+        cwd: process.cwd(),
+        timeout: 10 * 60 * 1000,
+        maxBuffer: 10 * 1024 * 1024,
+        windowsHide: true,
+      },
+    );
+  } catch (error) {
+    const details = error as {
+      message?: string;
+      stdout?: string;
+      stderr?: string;
+    };
+    const providerOutput = [details.stderr, details.stdout]
+      .filter((value): value is string => Boolean(value?.trim()))
+      .join("\n")
+      .trim();
+    throw new Error(
+      providerOutput || details.message || "Hermes subprocess failed.",
+    );
+  }
+  const { stdout, stderr } = result;
   if (!stdout.trim()) {
     throw new Error(stderr.trim() || "Hermes returned no output.");
   }
