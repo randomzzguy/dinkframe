@@ -82,6 +82,13 @@ Theme choices come from the active Supabase catalog, while repository-owned
 prompt recipes make each curated theme materially affect composition,
 typography, and graphic language.
 
+The creative-director house style is simple yet powerful: natural photography,
+light-led space, decisive hierarchy, and restrained graphic devices. Soft
+Editorial, Contemporary Lifestyle, Art Print, Organic Modern, Quiet Luxury, and
+Analog Film extend the catalog toward that direction. Dark arenas, glow,
+particles, plastic surfaces, and stacked effects are opt-in theme devices rather
+than the default definition of a sports poster.
+
 Frame type is routing metadata only. It changes narrative and hierarchy, but
 `Upcoming event`, `Congratulations`, `Announcement`, and equivalent category
 headings must never be rendered or included in a poster text checklist unless

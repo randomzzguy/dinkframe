@@ -6,30 +6,57 @@ Produce a sports campaign with a point of view. Every choice must reinforce the
 same concept. Reject a direction that would still look unchanged after swapping
 the requested theme for another theme.
 
+The DINKFRAME default is now **simple yet powerful**. Start from a believable,
+well-photographed athlete; clear hierarchy; natural light; and deliberate empty
+space. Add only the few graphic decisions that make the selected theme specific.
+Do not confuse production value with visual volume.
+
+## Naturalness and anti-AI standard
+
+- Preserve pores, fabric weave, paddle materials, court texture, and believable
+  shadows. Retouch lightly; never make the athlete waxy, airbrushed, or plastic.
+- Prefer daylight, soft studio light, or one credible directional source. Avoid
+  simultaneous rim lights, unexplained spotlights, and glowing body outlines.
+- Use one dominant image treatment and no more than two supporting graphic
+  devices. Do not stack grids, particles, 3D objects, smoke, light streaks,
+  holograms, brush marks, and textures in one composition.
+- Let empty space, crop, scale, and typography create impact before adding
+  effects. Every decorative element must explain the sport, place, or concept.
+- Keep the background spatially coherent. Location and pickleball cues should
+  feel photographed, printed, or intentionally graphic—not assembled from
+  unrelated generated fragments.
+- Light and minimal do not mean bland. Use decisive scale, one memorable crop,
+  exact spacing, and a controlled accent to create authority.
+
 ## Theme translation
 
 Use the selected family as a governing visual system:
 
 - **Minimalist:** severe hierarchy, one strong gesture, generous negative space,
-  precise typography, restrained accent.
+  precise typography, restrained accent, and a light or neutral field by
+  default. Avoid empty template minimalism; the crop or typographic decision
+  must be memorable.
 - **Clean & Premium:** editorial grid, refined spacing, quiet dimensional light,
   tactile but controlled materials. Default to a light-led composition with
   warm white or pale neutral occupying most of the canvas; use the chosen color
   in structured panels and accents unless the client explicitly requests dark.
 - **Powerful / Athletic:** diagonal force, condensed display type, court-derived
-  geometry, purposeful motion, hard contrast.
+  geometry, purposeful motion, hard contrast. Create power through pose, crop,
+  scale, and type—not explosions, smoke, or effect stacking.
 - **Futuristic:** technical grid, synthetic depth, angular modules, precise
-  digital texture, controlled glow.
+  digital texture, controlled glow. Keep surfaces believable and use no more
+  than one luminous effect family.
 - **Cyberpunk / Neon:** night atmosphere, luminous edges, layered digital type;
   keep skin natural and information crisp.
 - **Luxury Sports:** disciplined dark neutrals, sculpted light, refined metallic
-  detail, minimal ornament.
+  detail, minimal ornament. Luxury may also be light: cream, stone, soft grey,
+  and impeccable spacing are preferred over automatic black-and-gold.
 - **Editorial:** magazine-scale type, cropped headlines, fine rules, asymmetric
   whitespace, intentional photography.
 - **Urban:** wheat-paste layering, raw scale shifts, concrete or paper texture,
   deliberate imperfection without clutter.
 - **Cinematic:** dramatic key light, atmospheric depth, narrative framing, filmic
-  restraint rather than generic particles.
+  restraint rather than generic particles, smoke, sparks, or lens flares.
 - **Japanese-inspired:** unmistakably modern Japanese sports editorial. Use
   _ma_ (purposeful emptiness), asymmetric tension, disciplined modular grids,
   cropped or vertical Latin type, indigo/ink material cues, and one expressive
@@ -44,6 +71,24 @@ Use the selected family as a governing visual system:
   texture—not novelty leaves.
 - **Experimental / Surprise:** derive one repeatable system from the strongest
   cue in the logo, athlete, venue, or event story.
+- **Soft Editorial:** airy contemporary magazine structure, soft daylight,
+  muted tonal fields, elegant type contrast, fine rules, generous margins, and
+  natural retouching. Calm confidence replaces sports-poster aggression.
+- **Contemporary Lifestyle:** candid athletic photography, believable venue
+  context, natural skin and fabric, relaxed intentional cropping, and clean
+  lifestyle-brand typography. Personality and authenticity are the concept.
+- **Art Print:** one expressive crop, gallery-like border or negative space,
+  tactile paper grain, one abstract gesture, and finely composed typography.
+  Treat the poster as a collectible print, not an effects showcase.
+- **Organic Modern:** soft curves, natural materials, warm neutral space,
+  subtle tactile texture, and balanced asymmetry. Abstract court and location
+  cues into calm shapes without making the athlete feel decorative.
+- **Quiet Luxury:** cream, stone, soft grey, or a light tonal field; impeccable
+  spacing; refined serif-and-sans typography; subtle material detail; and
+  controlled contrast. No loud metallics or black-gold clichés.
+- **Analog Film:** documentary sports photography, gentle film grain, restrained
+  color response, imperfect crop, subtle halation or print texture, and simple
+  editorial type. Avoid fake light leaks and heavy retro filters.
 
 ## Color harmony
 
@@ -159,3 +204,6 @@ Before returning a prompt, verify:
 10. The logo is embedded without an obvious rectangular export background.
 11. No internal frame-type or category label appears in visible copy or the
     required-text checklist.
+12. The design does not show effect stacking, plastic skin, impossible lighting,
+    random filler objects, or a generic dark-arena background unless the chosen
+    theme explicitly requires a restrained version of that device.

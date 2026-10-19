@@ -65,7 +65,10 @@ describe("generation automation", () => {
     );
     expect(message).toContain("electric blue");
     expect(message).toContain("Acme");
-    expect(message).toContain("350 and 650 words");
+    expect(message).toContain("280 and 500 words");
+    expect(message).toContain("simple-yet-powerful art direction");
+    expect(message).toContain("Default to natural editorial realism");
+    expect(message).toContain("Avoid common AI-design signals");
     expect(message).toContain("not color alone");
     expect(message).toContain("plain lowercase list");
     expect(message).toContain("REQUIRED TEXT CHECKLIST");
@@ -124,7 +127,8 @@ describe("generation automation", () => {
 
     expect(message.match(/SURPRISE ME/g)).toHaveLength(2);
     expect(message).toContain("exact hex values");
-    expect(message).toContain("genuinely out-of-the-box named");
+    expect(message).toContain("genuinely original named concept");
+    expect(message).toContain("light, minimal, artistic");
     expect(message).toContain("avoid generic stadium");
   });
 
@@ -143,6 +147,19 @@ describe("generation automation", () => {
     expect(message).toContain("Accent color: #778899");
     expect(message).toContain("Claymorphism");
     expect(message).toContain("clay-like surfaces");
+  });
+
+  it("turns a light natural theme into specific anti-synthetic direction", () => {
+    const message = buildPromptStudioMessage({
+      ...snapshot,
+      themePreference: "soft-editorial",
+    });
+
+    expect(message).toContain("Soft Editorial");
+    expect(message).toContain("airy contemporary magazine layout");
+    expect(message).toContain("soft daylight");
+    expect(message).toContain("naturally retouched athlete");
+    expect(message).toContain("rather than synthetic");
   });
 
   it("only sends the tournament logo to Prompt Studio", () => {

@@ -7,6 +7,10 @@ description: Create, review, and revise concise professional image-generation pr
 
 Act as a senior sports campaign designer. Convert the brief into one specific,
 coherent poster system—not a generic sports template or a catalogue of effects.
+The house direction is simple yet powerful: human, art-directed, and confident
+in its restraint. Default to natural editorial photography and light-led space;
+use a dark or effect-heavy treatment only when the selected theme or client brief
+clearly requires it.
 
 Read [references/art-direction.md](references/art-direction.md) before writing or
 revising a prompt. Read
@@ -31,6 +35,8 @@ Preparing or reviewing a prompt never permits image generation.
 2. Name one concept and translate the chosen theme into at least three visible
    mechanisms: **composition, typography, and graphic/material language**. A
    color alone never satisfies a theme.
+   Use one dominant photographic moment and at most two supporting graphic
+   devices. Remove anything that does not strengthen hierarchy or story.
 3. Build one harmonious palette: requested color, supporting neutral, and at
    most one controlled complement. Protect natural skin and clothing colors.
    Route the exact color selection through its recipe; do not reuse a previous
@@ -72,10 +78,15 @@ Preparing or reviewing a prompt never permits image generation.
      or a similar category heading. Express their intent only through hierarchy,
      composition, and mood. Allow the same words only when the client independently
      supplied them verbatim inside announcement copy.
+10. Protect photographic truth. Keep skin, fabric, paddles, court surfaces,
+    venue light, and depth believable. Avoid common AI-design signals: excessive
+    glow, random particles, floating filler objects, glossy plastic everywhere,
+    impossible rim light, overprocessed faces, generic dark arenas, and stacked
+    effects. A selected theme may justify one of these devices, never all of them.
 
 ## Prompt contract
 
-- Write **350–650 words**. Prefer strong visual decisions over repeated
+- Write **280–500 words**. Prefer strong visual decisions over repeated
   adjectives and long avoid-lists.
 - Use this compact order: objective and format; concept/theme signature;
   composition and player; typography/information hierarchy; palette and
@@ -99,13 +110,19 @@ Preparing or reviewing a prompt never permits image generation.
   integrated into a premium sports campaign—not a plain lowercase list with
   utility icons.
 - Make the theme recognizable even if the requested color were removed.
+- For light/minimal directions, make at least 55–70% of the canvas light or
+  breathable negative space, unless the supplied photography makes that
+  composition visibly weaker. Simplicity must come from hierarchy and spacing,
+  not from leaving required facts undesigned.
 - Require the background to communicate both pickleball and the supplied
   location. Abstract effects alone never satisfy the location requirement.
 - Keep the athlete, logo, required text, and sponsor-safe area inside a centered
   4:5 crop-safe region. Place only expendable atmosphere beyond that boundary.
 - For `Surprise Me`, write `SURPRISE ME` explicitly and invent one genuinely
   out-of-the-box named concept. Derive its palette and system from the supplied
-  assets; do not default to a black stadium, neon lines, or familiar templates.
+  assets. Prefer a light, minimal, artistic, or naturally photographic solution
+  unless the assets strongly justify another direction; do not default to a
+  black stadium, neon lines, or familiar templates.
 - When a theme is culturally inspired, add a conspicuous **TEXT EXCLUSION**:
   no unsupplied language, faux glyphs, seals, stamps, or pseudo-writing. Express
   the theme through layout, materials, geometry, rhythm, and supplied copy only.

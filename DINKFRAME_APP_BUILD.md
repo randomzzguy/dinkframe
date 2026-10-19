@@ -312,6 +312,12 @@ Create a curated list of design directions, for example:
 - Bohemian
 - Victorian
 - Wabi-Sabi
+- Soft Editorial
+- Contemporary Lifestyle
+- Art Print
+- Organic Modern
+- Quiet Luxury
+- Analog Film
 
 Include thumbnails or simple visual previews for each theme.
 

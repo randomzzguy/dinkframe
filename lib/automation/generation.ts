@@ -79,7 +79,7 @@ export type ClaimedGenerationAsset = GenerationAssetManifestItem & {
   downloadUrl: string;
 };
 
-export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v15";
+export const PROMPT_STUDIO_TEMPLATE_VERSION = "prompt-studio-v16";
 export const IMAGE_GENERATION_TEMPLATE_VERSION = "image-generation-v3";
 
 export const GENERATION_STAGE_LABELS: Record<GenerationJobStage, string> = {
@@ -103,8 +103,11 @@ export function buildPromptStudioMessage(snapshot: GenerationBriefSnapshot) {
     "Use the attached tournament/event logo as a visual reference.",
     "Player photos are intentionally withheld from this prompt-preparation chat but will be supplied during image generation in clearly named player groups. Direct the image model to use every exact player reference, preserve each identity independently, never merge faces, swap bodies, or omit a selected player, and never substitute an anonymous athlete.",
     "Do not generate an image in this conversation. Return the polished image-generation prompt only.",
-    "Keep the final prompt between 350 and 650 words. Make the selected theme unmistakable through composition, typography, and graphic language—not color alone.",
-    "Treat theme and color as independent creative controls. Apply the specific theme recipe and a deliberate palette recipe; do not fall back to the same dark-arena layout for every selection.",
+    "Keep the final prompt between 280 and 500 words. Make the selected theme unmistakable through composition, typography, and material language—not color alone.",
+    "Use a simple-yet-powerful art direction: one clear concept, one dominant photographic moment, confident negative space, and only the graphic elements needed to support the hierarchy.",
+    "Default to natural editorial realism and a light-led composition unless the selected theme or client notes explicitly require darkness. Preserve believable skin, fabric, equipment, venue light, and photographic texture.",
+    "Avoid common AI-design signals: effect stacking, excessive glow, random particles, floating decorative objects, glossy synthetic surfaces, overprocessed skin, impossible lighting, generic dark stadiums, and filler graphics. Use any such device only when the selected theme specifically calls for it, and then with restraint.",
+    "Treat theme and color as independent creative controls. Apply the exact theme recipe and a deliberate palette recipe; do not recycle one sports-poster layout with a different accent color.",
     "Preserve every fact, but professionally improve casing, date display, line breaks, and typographic grouping instead of copying raw form formatting.",
     "Preserve player, tournament, event, partner, and venue wording character-for-character apart from casing. Never add apostrophes, plurals, words, or punctuation to an event name; for example MEN SINGLES must not become MEN’S SINGLES.",
     "Treat all supporting information as designed sports-poster typography, never as a plain lowercase list with utility icons.",
@@ -289,7 +292,7 @@ function formatColorDirection(snapshot: GenerationBriefSnapshot) {
 
 function formatThemeDirection(preference: string) {
   if (preference === "surprise") {
-    return "SURPRISE ME — invent a genuinely out-of-the-box named sports-campaign concept derived from the supplied assets. Make it recognizable through composition, typography, and material language; avoid generic stadium, neon, and template aesthetics.";
+    return "SURPRISE ME — invent a genuinely original named concept derived from the supplied assets, preferably using a light, minimal, artistic, or naturally photographic direction unless the assets strongly justify something else. Make it recognizable through composition, typography, and material language; avoid generic stadium, neon, effect-heavy, and template aesthetics.";
   }
   return getThemePromptDirection(preference);
 }

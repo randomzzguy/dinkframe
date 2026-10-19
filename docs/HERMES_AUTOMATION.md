@@ -13,9 +13,11 @@ owner decision token.
 3. The local runner claims the job, downloads short-lived copies, and invokes
    the `dinkframe-creative-director` skill through the `openai-codex`
    subscription provider.
-   The skill keeps the prompt to 350–650 words and requires the selected theme
-   to appear through composition, typography, and graphic language rather than
-   color alone.
+   The skill keeps the prompt to 280–500 words and requires the selected theme
+   to appear through composition, typography, and material language rather than
+   color alone. Its default quality bar is light-led, naturally photographic,
+   simple, and art-directed; darker or effect-heavy treatments require an
+   explicit theme or client direction.
 4. Hermes sends the complete prompt with owner-only **Approve**, **Revise**,
    and **Cancel** buttons attached to that same Telegram message.
 5. **Approve** queues one image job with the approved prompt, tournament logo,
