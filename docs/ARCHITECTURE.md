@@ -15,6 +15,17 @@ One Next.js application and one Supabase project serve both domains. Marketing r
 
 ## Request paths
 
+### Complete a magic-link sign-in
+
+Supabase email renders a token-hash URL to `/auth/confirm` → a safe GET renders
+the confirmation screen without consuming the token → the user explicitly
+submits the server-action form → the server verifies the email OTP and writes
+the session cookies → shared post-login routing sends admins, new clients, and
+returning clients to the correct protected destination. The redirect embedded
+by Supabase is accepted only when its origin and callback path match the
+configured application URL. The legacy PKCE callback remains available for
+compatible auth flows.
+
 ### Read an order
 
 Browser navigation → protected server layout → verified Supabase claims → server query → RLS ownership check → rendered page.

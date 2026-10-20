@@ -37,6 +37,28 @@ export function getAdminPostLoginPath(nextPath: string) {
     : "/admin";
 }
 
+export function getSafeNextPathFromAuthRedirect(
+  value: string | null | undefined,
+  appUrl: string,
+  fallback = "/dashboard",
+) {
+  if (!value) return fallback;
+
+  try {
+    const redirectUrl = new URL(value);
+    const appOrigin = new URL(appUrl).origin;
+    if (
+      redirectUrl.origin !== appOrigin ||
+      redirectUrl.pathname !== "/auth/callback"
+    ) {
+      return fallback;
+    }
+    return getSafeNextPath(redirectUrl.searchParams.get("next"), fallback);
+  } catch {
+    return fallback;
+  }
+}
+
 export function getCrossDomainLoginRedirect(
   requestUrl: URL,
   appUrl: string | undefined,

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { isAdminEmail } from "@/lib/auth/guards";
-import { needsOnboarding } from "@/lib/auth/onboarding";
-import { getAdminPostLoginPath, getSafeNextPath } from "@/lib/auth/urls";
+import { getPostLoginDestination } from "@/lib/auth/post-login";
+import { getSafeNextPath } from "@/lib/auth/urls";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -20,23 +19,13 @@ export async function GET(request: Request) {
     );
 
     if (!error) {
-      let destination = safeNext;
-
-      if (data.user) {
-        if (isAdminEmail(data.user.email)) {
-          destination = getAdminPostLoginPath(safeNext);
-        } else {
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("id", data.user.id)
-            .maybeSingle();
-
-          if (!profileError && needsOnboarding(profile?.full_name)) {
-            destination = "/onboarding";
-          }
-        }
-      }
+      const destination = data.user
+        ? await getPostLoginDestination({
+            supabase,
+            user: data.user,
+            next: safeNext,
+          })
+        : safeNext;
 
       return NextResponse.redirect(new URL(destination, requestUrl.origin));
     }

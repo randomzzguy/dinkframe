@@ -58,3 +58,14 @@ of truth and each athlete photo references one player. The atomic submission
 function validates at least one photo per player and no more than eight total.
 Generation manifests repeat the player label beside every local reference path
 so multi-player image generation does not treat all faces as one anonymous pool.
+
+## ADR-010 — Magic links require an explicit confirmation POST
+
+Status: accepted.
+
+Authentication emails link to a non-consuming confirmation page using
+Supabase's token hash. A user-initiated server action performs `verifyOtp` and
+then applies the same admin/onboarding/client routing as the legacy PKCE
+callback. This prevents GET-only email security previews from spending the
+one-time credential and allows the email to be opened on a different browser or
+device, while keeping redirect destinations origin- and path-allowlisted.

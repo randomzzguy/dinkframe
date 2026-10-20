@@ -22,11 +22,16 @@ Where it lives:
 
 - Login action: `app/(auth)/login/actions.ts`
 - Callback: `app/(auth)/auth/callback/route.ts`
+- Protected email confirmation: `app/(auth)/auth/confirm`
 - Cookie clients: `lib/supabase/browser.ts`, `server.ts`, and `proxy.ts`
 - Route guards: `lib/auth/guards.ts`
 - Request refresh: root `proxy.ts` (Next.js 16 name for middleware)
 
-Rule to remember: the wristband proves identity, but every room still checks access. Server layouts guard navigation; RLS guards the underlying data.
+Rule to remember: the email link opens a non-consuming confirmation page and
+only the user's POST verifies its token hash. This avoids email-preview token
+consumption and same-browser PKCE failures. The older PKCE callback remains for
+compatible flows. The wristband proves identity, but every room still checks
+access. Server layouts guard navigation; RLS guards the underlying data.
 
 ## The courtside messenger — account and order email
 

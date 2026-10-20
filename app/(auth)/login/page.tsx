@@ -50,8 +50,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           role="alert"
           className="mt-6 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950"
         >
-          That sign-in link could not be completed. Request a fresh link below
-          and open it in the same browser.
+          That sign-in link has expired, was incomplete, or was already used.
+          Request a fresh link below to continue.
         </div>
       ) : null}
       <LoginForm nextPath={nextPath} />

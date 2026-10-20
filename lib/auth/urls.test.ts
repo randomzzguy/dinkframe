@@ -4,6 +4,7 @@ import {
   getAdminPostLoginPath,
   getCrossDomainLoginRedirect,
   getSafeNextPath,
+  getSafeNextPathFromAuthRedirect,
 } from "./urls";
 
 const appUrl = "https://app.dinkframe.my";
@@ -56,6 +57,23 @@ describe("safe post-login destinations", () => {
     "/\\attacker.example/orders/abc",
   ])("rejects an external redirect attempt: %s", (value) => {
     expect(getSafeNextPath(value)).toBe("/dashboard");
+  });
+
+  it("recovers the intended path from an approved auth callback URL", () => {
+    expect(
+      getSafeNextPathFromAuthRedirect(
+        "https://app.dinkframe.my/auth/callback?next=%2Forders%2Fabc%3Ffrom%3Demail",
+        appUrl,
+      ),
+    ).toBe("/orders/abc?from=email");
+  });
+
+  it.each([
+    "https://attacker.example/auth/callback?next=/admin",
+    "https://app.dinkframe.my/not-auth?next=/admin",
+    "not-a-url",
+  ])("rejects an untrusted auth redirect: %s", (value) => {
+    expect(getSafeNextPathFromAuthRedirect(value, appUrl)).toBe("/dashboard");
   });
 });
 

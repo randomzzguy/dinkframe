@@ -29,10 +29,12 @@ const templates = [
     eyebrow: "SECURE ACCOUNT ACCESS",
     title: "Your dashboard is ready.",
     intro:
-      "Use the button below to securely sign in and view or manage your poster orders.",
-    actionUrl: "{{ .ConfirmationURL }}",
+      "Use the button below, then tap Continue to securely sign in and view or manage your poster orders.",
+    actionUrl:
+      "{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&redirect_to={{ .RedirectTo }}",
     actionLabel: "Sign in to DINKFRAME",
-    note: "This link expires in 60 minutes and can only be used once. If you did not request it, you can safely ignore this email.",
+    showFallback: true,
+    note: "This link expires in 60 minutes and can only be used once. The confirmation page protects it from automatic email previews. If you did not request it, you can safely ignore this email.",
   },
   {
     key: "confirmation",
@@ -233,9 +235,11 @@ function renderTemplate(template) {
   const primaryAction = template.code
     ? renderCode(template.code)
     : renderButton(template.actionUrl, template.actionLabel);
-  const fallback = template.actionUrl?.includes("ConfirmationURL")
-    ? renderFallback(template.actionUrl)
-    : "";
+  const fallback =
+    template.actionUrl &&
+    (template.showFallback || template.actionUrl.includes("ConfirmationURL"))
+      ? renderFallback(template.actionUrl)
+      : "";
 
   return `<!doctype html>
 <html lang="en">

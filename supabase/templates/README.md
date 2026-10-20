@@ -18,8 +18,11 @@ The hosted dashboard does not automatically read these local files.
 7. Save, then send a fresh test email for that flow.
 
 The app currently depends on **Magic Link**. Install and test
-`magic-link.html` first. Its `{{ .ConfirmationURL }}` placeholder must stay
-unchanged because Supabase replaces it with the one-time access URL.
+`magic-link.html` first. Its `{{ .TokenHash }}`, `{{ .SiteURL }}`, and
+`{{ .RedirectTo }}` placeholders must stay unchanged. The email opens the
+non-consuming `/auth/confirm` page; only the user pressing **Continue to
+DINKFRAME** verifies the token. This prevents email security previews from
+spending the one-time link and removes the same-browser PKCE dependency.
 
 The first six files in `manifest.json` are authentication messages. The
 remaining files are security notifications. A notification template only sends
